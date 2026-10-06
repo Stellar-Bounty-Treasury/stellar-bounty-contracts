@@ -4,9 +4,9 @@ Soroban smart contract foundation and specifications for **Stellar Bounty Treasu
 
 ---
 
-## 📌 Project Overview
+## 📌 What It Does
 
-At **Level 1 (White Belt)**, this repository establishes the formal Soroban contract architecture, build system, types, and unit testing harness.
+At **Level 1 (White Belt)**, this repository establishes the formal Soroban contract architecture, build system, types, storage schemas, and unit testing harness.
 
 The complete on-chain escrow, milestone verification, and conditional settlement systems are planned for future levels. In Level 1, we lay down the strict data structures, storage keys, authorization patterns, and unit tests to ensure that Level 2 and Level 3 build on an immutable and audited foundation.
 
@@ -39,24 +39,7 @@ Bounty Treasury Contract
 
 ---
 
-## 🏗️ Repository Structure
-
-```text
-stellar-bounty-contracts/
-├── .cargo/
-│   └── config.toml           # Toolchain and linker configurations
-├── Cargo.toml                # Rust dependencies & Soroban SDK 22 configuration
-├── Cargo.lock                # Pinned dependency tree
-├── src/
-│   ├── lib.rs                # BountyTreasuryContract implementation & entry points
-│   ├── types.rs              # Contract types: Bounty, Milestone, BountyStatus, DataKey
-│   └── test.rs               # Unit test suite with Soroban Env & MockAuth
-└── README.md                 # Architecture, instructions & roadmap
-```
-
----
-
-## 🚀 Getting Started
+## 🚀 How to Run It
 
 ### Prerequisites
 
@@ -84,6 +67,76 @@ The resulting compiled WASM will be located at:
 
 ---
 
+## ⚙️ Required Environment Variables
+
+For local contract compilation and testing, standard Cargo tooling is used. No `.env` secrets or private keys are required or committed:
+
+* `STELLAR_NETWORK=testnet` (for future contract deployment via Stellar CLI)
+* `SOROBAN_RPC_URL=https://soroban-testnet.stellar.org` (for future deployment)
+
+---
+
+## 👛 How to Connect a Stellar Testnet Wallet
+
+For smart contracts:
+1. Generate an identity using Stellar CLI or Freighter wallet.
+2. In Soroban contracts, callers authenticate invocations using `Address::require_auth()`.
+3. In Level 1 tests, simulated test accounts and auth mocks are provisioned via `env.mock_all_auths()` and `Address::generate(&env)`.
+
+---
+
+## 📝 How to Create a Bounty
+
+At the contract layer, bounties are created via the contract's public method:
+
+```rust
+pub fn create_bounty(
+    env: Env,
+    creator: Address,
+    title: Symbol,
+    target_amount: i128,
+) -> u64
+```
+
+* Requires authorization from the `creator` address.
+* Enforces positive `target_amount`.
+* Increments internal persistent bounty counter and saves the `Bounty` record to storage.
+
+---
+
+## 💸 How to Fund a Bounty
+
+At Level 1, funding is executed peer-to-peer on Stellar Testnet and validated via Horizon. For Level 2, the contract funding module will accept Soroban token transfers:
+1. Contributor invokes `fund_bounty(env, contributor: Address, bounty_id: u64, amount: i128)`.
+2. The contract invokes the Stellar Asset Contract (SAC) to transfer tokens to the contract escrow vault.
+3. The contract updates the persistent `funded_amount` state.
+
+---
+
+## 🔍 How to Verify a Transaction
+
+In Soroban contracts:
+1. Transactions generate on-chain events via `env.events().publish(...)`.
+2. Unit tests verify state changes using contract clients (`client.get_bounty(&bounty_id)`).
+3. On Testnet, contract invocations are verified via Soroban RPC `getTransaction` queries.
+
+---
+
+## 🔄 How the Repository Will Evolve in Levels 2 and 3
+
+```text
+LEVEL 1 (Current)
+  Create Bounty Foundation ➔ Struct & Storage Key Validation ➔ WASM Build & Testing Harness
+
+LEVEL 2 (Next Milestone)
+  On-chain Escrow Vault ➔ Milestone Submissions ➔ Community/Arbiter Verification ➔ Conditional Release
+
+LEVEL 3 (Complete Bounty Treasury)
+  Multi-recipient Distribution ➔ Realtime Contract Event Streaming ➔ Autonomous Treasury Governance
+```
+
+---
+
 ## 🧪 Test Suite Coverage
 
 The Level 1 contract test suite covers:
@@ -94,21 +147,6 @@ The Level 1 contract test suite covers:
 5. `test_create_bounty_zero_target_fails`: Asserts rejection of zero target amounts.
 6. `test_create_bounty_negative_target_fails`: Asserts rejection of negative amounts.
 7. `test_get_nonexistent_bounty_fails`: Asserts panic when querying unindexed bounty IDs.
-
----
-
-## 🔄 Progression to Level 2 and Level 3
-
-```text
-LEVEL 1 (Current)
-  Create Bounty Foundation ➔ Struct & Storage Key Validation ➔ WASM Build & Testing Harness
-
-LEVEL 2 (Next)
-  On-chain Escrow Vault ➔ Milestone Submissions ➔ Community/Arbiter Verification ➔ Conditional Release
-
-LEVEL 3 (Future)
-  Multi-recipient Distribution ➔ Realtime Contract Event Streaming ➔ Autonomous Treasury Governance
-```
 
 ---
 
