@@ -1,6 +1,6 @@
 #![no_std]
 use soroban_sdk::{
-    contract, contractimpl, symbol_short, token, Address, Env, Symbol,
+    contract, contractimpl, symbol_short, token, Address, Env, Symbol, Vec,
 };
 
 pub mod types;
@@ -8,7 +8,10 @@ pub mod types;
 #[cfg(test)]
 mod test;
 
-use types::{Bounty, BountyStatus, DataKey, Milestone, MilestoneStatus, VoteDecision};
+use types::{
+    AllocationType, Bounty, BountyStatus, DataKey, Milestone, MilestoneStatus,
+    RecipientShare, SettlementConfig, SettlementStatus, VoteDecision,
+};
 
 #[contract]
 pub struct BountyTreasuryContract;
@@ -100,8 +103,11 @@ impl BountyTreasuryContract {
             .get(&DataKey::Bounty(bounty_id))
             .expect("Bounty not found");
 
-        if bounty.status == BountyStatus::Cancelled || bounty.status == BountyStatus::Completed {
-            panic!("Cannot fund cancelled or completed bounty");
+        if bounty.status == BountyStatus::Cancelled
+            || bounty.status == BountyStatus::Completed
+            || bounty.status == BountyStatus::Refunded
+        {
+            panic!("Cannot fund cancelled, completed, or refunded bounty");
         }
 
         // Authoritatively lock tokens in contract escrow
@@ -151,6 +157,9 @@ impl BountyTreasuryContract {
         if bounty.creator != creator {
             panic!("Only bounty creator can add milestones");
         }
+        if bounty.status == BountyStatus::Cancelled || bounty.status == BountyStatus::Refunded {
+            panic!("Cannot add milestones to cancelled or refunded bounty");
+        }
 
         bounty.milestone_count += 1;
         let milestone_id = bounty.milestone_count;
@@ -182,7 +191,142 @@ impl BountyTreasuryContract {
         milestone_id
     }
 
-    /// 4. Submit milestone deliverable reference (GitHub PR / commit / CID).
+    /// 4. Configure multi-recipient settlement router for a milestone.
+    pub fn configure_settlement(
+        env: Env,
+        creator: Address,
+        bounty_id: u64,
+        milestone_id: u32,
+        allocation_type: AllocationType,
+        recipients: Vec<RecipientShare>,
+    ) -> u32 {
+        creator.require_auth();
+
+        let bounty: Bounty = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Bounty(bounty_id))
+            .expect("Bounty not found");
+
+        if bounty.creator != creator {
+            panic!("Only bounty creator can configure settlement router");
+        }
+
+        let milestone: Milestone = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Milestone(bounty_id, milestone_id))
+            .expect("Milestone not found");
+
+        if milestone.status == MilestoneStatus::Paid {
+            panic!("Cannot configure settlement for already paid milestone");
+        }
+
+        let settlement_key = DataKey::Settlement(bounty_id, milestone_id);
+        if let Some(existing) = env.storage().persistent().get::<DataKey, SettlementConfig>(&settlement_key) {
+            if existing.is_immutable {
+                panic!("Settlement configuration is immutable and locked");
+            }
+        }
+
+        if recipients.is_empty() {
+            panic!("Settlement must contain at least one recipient");
+        }
+
+        // Validate recipient uniqueness and allocations
+        let mut computed_shares = Vec::new(&env);
+        let mut total_allocated: i128 = 0;
+        let mut total_bps: u32 = 0;
+
+        for i in 0..recipients.len() {
+            let share = recipients.get(i).unwrap();
+
+            // Check duplicate recipients
+            for j in 0..i {
+                let prev = recipients.get(j).unwrap();
+                if prev.recipient == share.recipient {
+                    panic!("Duplicate recipient address not allowed");
+                }
+            }
+
+            match allocation_type {
+                AllocationType::Fixed => {
+                    if share.amount <= 0 {
+                        panic!("Fixed allocation share amount must be positive");
+                    }
+                    total_allocated += share.amount;
+                    computed_shares.push_back(share);
+                }
+                AllocationType::Percentage => {
+                    if share.percentage_bps == 0 || share.percentage_bps > 10_000 {
+                        panic!("Percentage share basis points must be between 1 and 10000");
+                    }
+                    total_bps += share.percentage_bps;
+                    computed_shares.push_back(share);
+                }
+            }
+        }
+
+        // Validate allocation totals
+        let final_shares = match allocation_type {
+            AllocationType::Fixed => {
+                if total_allocated != milestone.reward_amount {
+                    panic!("Total fixed allocation does not match milestone reward amount");
+                }
+                computed_shares
+            }
+            AllocationType::Percentage => {
+                if total_bps != 10_000 {
+                    panic!("Total percentage basis points must sum exactly to 10000 (100%)");
+                }
+                // Convert bps to exact amounts and handle rounding residue
+                let mut converted_shares = Vec::new(&env);
+                let mut sum_calc: i128 = 0;
+                let n = computed_shares.len();
+
+                for i in 0..n {
+                    let mut item = computed_shares.get(i).unwrap();
+                    let calculated_amt = (milestone.reward_amount * item.percentage_bps as i128) / 10_000;
+                    item.amount = calculated_amt;
+                    sum_calc += calculated_amt;
+                    converted_shares.push_back(item);
+                }
+
+                // If rounding remainder exists, add to first recipient
+                let remainder = milestone.reward_amount - sum_calc;
+                if remainder > 0 && !converted_shares.is_empty() {
+                    let mut first = converted_shares.get(0).unwrap();
+                    first.amount += remainder;
+                    converted_shares.set(0, first);
+                }
+
+                converted_shares
+            }
+        };
+
+        let settlement = SettlementConfig {
+            settlement_id: milestone_id,
+            bounty_id,
+            milestone_id,
+            allocation_type,
+            total_amount: milestone.reward_amount,
+            recipients: final_shares,
+            status: SettlementStatus::Pending,
+            is_immutable: false,
+        };
+
+        env.storage().persistent().set(&settlement_key, &settlement);
+
+        // Emit settlement configured event
+        env.events().publish(
+            (symbol_short!("settle"), symbol_short!("config")),
+            (bounty_id, milestone_id, recipients.len()),
+        );
+
+        milestone_id
+    }
+
+    /// 5. Submit milestone deliverable reference (GitHub PR / commit / CID).
     pub fn submit_milestone(
         env: Env,
         caller: Address,
@@ -198,7 +342,24 @@ impl BountyTreasuryContract {
             .get(&DataKey::Milestone(bounty_id, milestone_id))
             .expect("Milestone not found");
 
-        if milestone.recipient != caller {
+        // Allow designated milestone recipient OR designated first settlement recipient
+        let settlement_key = DataKey::Settlement(bounty_id, milestone_id);
+        let is_authorized_submitter = if milestone.recipient == caller {
+            true
+        } else if let Some(config) = env.storage().persistent().get::<DataKey, SettlementConfig>(&settlement_key) {
+            let mut found = false;
+            for i in 0..config.recipients.len() {
+                if config.recipients.get(i).unwrap().recipient == caller {
+                    found = true;
+                    break;
+                }
+            }
+            found
+        } else {
+            false
+        };
+
+        if !is_authorized_submitter {
             panic!("Only designated recipient can submit milestone");
         }
 
@@ -222,7 +383,7 @@ impl BountyTreasuryContract {
         );
     }
 
-    /// 5. Community Verification (Approve / Reject) with duplicate vote prevention.
+    /// 6. Community Verification (Approve / Reject) with duplicate vote prevention.
     pub fn verify_milestone(
         env: Env,
         reviewer: Address,
@@ -264,6 +425,20 @@ impl BountyTreasuryContract {
         // Check if approval threshold reached
         if milestone.approvals >= milestone.approval_threshold {
             milestone.status = MilestoneStatus::Approved;
+
+            // Make settlement config immutable upon approval to prevent front-running
+            let settlement_key = DataKey::Settlement(bounty_id, milestone_id);
+            if let Some(mut settlement) = env.storage().persistent().get::<DataKey, SettlementConfig>(&settlement_key) {
+                settlement.is_immutable = true;
+                settlement.status = SettlementStatus::Authorized;
+                env.storage().persistent().set(&settlement_key, &settlement);
+
+                env.events().publish(
+                    (symbol_short!("settle"), symbol_short!("authoriz")),
+                    (bounty_id, milestone_id, settlement.total_amount),
+                );
+            }
+
             env.events().publish(
                 (symbol_short!("milestone"), symbol_short!("approved")),
                 (bounty_id, milestone_id, milestone.approvals),
@@ -277,8 +452,8 @@ impl BountyTreasuryContract {
             .set(&DataKey::Milestone(bounty_id, milestone_id), &milestone);
     }
 
-    /// 6. Conditional Payment Release: strictly authorized by the Soroban contract.
-    pub fn release_milestone_payment(
+    /// 7. Execute Multi-Recipient Settlement through the Settlement Router.
+    pub fn execute_settlement(
         env: Env,
         caller: Address,
         bounty_id: u64,
@@ -292,40 +467,183 @@ impl BountyTreasuryContract {
             .get(&DataKey::Milestone(bounty_id, milestone_id))
             .expect("Milestone not found");
 
+        if milestone.status == MilestoneStatus::Paid {
+            panic!("Settlement has already been executed");
+        }
+
         // Contract-enforced condition: MUST be Approved
         if milestone.status != MilestoneStatus::Approved {
             panic!("Payment condition not satisfied: milestone has not reached approval threshold");
         }
 
-        let bounty: Bounty = env
+        let mut bounty: Bounty = env
             .storage()
             .persistent()
             .get(&DataKey::Bounty(bounty_id))
             .expect("Bounty not found");
 
-        // Disburse funds authoritatively from contract escrow to recipient
-        let token_client = token::Client::new(&env, &bounty.token);
-        token_client.transfer(
-            &env.current_contract_address(),
-            &milestone.recipient,
-            &milestone.reward_amount,
-        );
+        if bounty.funded_amount < milestone.reward_amount {
+            panic!("Insufficient bounty escrow balance to execute settlement");
+        }
 
+        let settlement_key = DataKey::Settlement(bounty_id, milestone_id);
+        let token_client = token::Client::new(&env, &bounty.token);
+
+        if let Some(mut settlement) = env.storage().persistent().get::<DataKey, SettlementConfig>(&settlement_key) {
+            if settlement.status == SettlementStatus::Settled {
+                panic!("Settlement has already been executed");
+            }
+
+            settlement.status = SettlementStatus::Executing;
+            env.events().publish(
+                (symbol_short!("settle"), symbol_short!("started")),
+                (bounty_id, milestone_id, settlement.total_amount),
+            );
+
+            // Execute atomic transfers to all recipients
+            for i in 0..settlement.recipients.len() {
+                let share = settlement.recipients.get(i).unwrap();
+                token_client.transfer(
+                    &env.current_contract_address(),
+                    &share.recipient,
+                    &share.amount,
+                );
+
+                // Emit individual recipient payment event
+                env.events().publish(
+                    (symbol_short!("settle"), symbol_short!("paid")),
+                    (bounty_id, milestone_id, share.recipient, share.amount),
+                );
+            }
+
+            settlement.status = SettlementStatus::Settled;
+            settlement.is_immutable = true;
+            env.storage().persistent().set(&settlement_key, &settlement);
+
+            env.events().publish(
+                (symbol_short!("settle"), symbol_short!("done")),
+                (bounty_id, milestone_id, settlement.total_amount),
+            );
+        } else {
+            // Default single-recipient fallback (Level 2 compatibility)
+            token_client.transfer(
+                &env.current_contract_address(),
+                &milestone.recipient,
+                &milestone.reward_amount,
+            );
+
+            env.events().publish(
+                (symbol_short!("milestone"), symbol_short!("paid")),
+                (
+                    bounty_id,
+                    milestone_id,
+                    milestone.recipient.clone(),
+                    milestone.reward_amount,
+                ),
+            );
+        }
+
+        // Update bounty escrow balance and milestone status
+        bounty.funded_amount -= milestone.reward_amount;
         milestone.status = MilestoneStatus::Paid;
 
         env.storage()
             .persistent()
             .set(&DataKey::Milestone(bounty_id, milestone_id), &milestone);
+        env.storage().persistent().set(&DataKey::Bounty(bounty_id), &bounty);
+    }
 
-        // Emit structured event
+    /// Backward compatibility alias for single/multi-recipient release
+    pub fn release_milestone_payment(
+        env: Env,
+        caller: Address,
+        bounty_id: u64,
+        milestone_id: u32,
+    ) {
+        Self::execute_settlement(env, caller, bounty_id, milestone_id);
+    }
+
+    /// 8. Refund / Recovery Mechanism: securely return remaining unspent escrow funds.
+    pub fn refund_bounty(env: Env, caller: Address, bounty_id: u64) {
+        caller.require_auth();
+
+        let mut bounty: Bounty = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Bounty(bounty_id))
+            .expect("Bounty not found");
+
+        if bounty.creator != caller {
+            panic!("Only bounty creator can trigger refund");
+        }
+
+        if bounty.status == BountyStatus::Completed || bounty.status == BountyStatus::Refunded {
+            panic!("Bounty is already completed or refunded");
+        }
+
+        if bounty.funded_amount <= 0 {
+            panic!("No remaining escrow balance to refund");
+        }
+
+        let refund_amount = bounty.funded_amount;
+
+        // Transfer funds back to creator
+        let token_client = token::Client::new(&env, &bounty.token);
+        token_client.transfer(
+            &env.current_contract_address(),
+            &bounty.creator,
+            &refund_amount,
+        );
+
+        bounty.funded_amount = 0;
+        bounty.status = BountyStatus::Refunded;
+
+        env.storage().persistent().set(&DataKey::Bounty(bounty_id), &bounty);
+        env.storage().persistent().set(&DataKey::Refunded(bounty_id), &true);
+
         env.events().publish(
-            (symbol_short!("milestone"), symbol_short!("paid")),
-            (
-                bounty_id,
-                milestone_id,
-                milestone.recipient,
-                milestone.reward_amount,
-            ),
+            (symbol_short!("refund"), symbol_short!("done")),
+            (bounty_id, caller, refund_amount),
+        );
+    }
+
+    /// 9. Final Bounty Completion: contract-enforced completion once all milestones are paid.
+    pub fn complete_bounty(env: Env, caller: Address, bounty_id: u64) {
+        caller.require_auth();
+
+        let mut bounty: Bounty = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Bounty(bounty_id))
+            .expect("Bounty not found");
+
+        if bounty.creator != caller {
+            panic!("Only bounty creator can complete bounty");
+        }
+
+        if bounty.milestone_count == 0 {
+            panic!("Cannot complete bounty with no milestones");
+        }
+
+        // Verify all milestones have been Paid
+        for m_id in 1..=bounty.milestone_count {
+            let milestone: Milestone = env
+                .storage()
+                .persistent()
+                .get(&DataKey::Milestone(bounty_id, m_id))
+                .expect("Milestone not found");
+
+            if milestone.status != MilestoneStatus::Paid {
+                panic!("All milestones must be paid before marking bounty completed");
+            }
+        }
+
+        bounty.status = BountyStatus::Completed;
+        env.storage().persistent().set(&DataKey::Bounty(bounty_id), &bounty);
+
+        env.events().publish(
+            (symbol_short!("bounty"), symbol_short!("done")),
+            (bounty_id, bounty.milestone_count),
         );
     }
 
@@ -350,5 +668,27 @@ impl BountyTreasuryContract {
         env.storage()
             .persistent()
             .has(&DataKey::Vote(bounty_id, milestone_id, reviewer))
+    }
+
+    /// Query settlement configuration.
+    pub fn get_settlement(env: Env, bounty_id: u64, milestone_id: u32) -> SettlementConfig {
+        env.storage()
+            .persistent()
+            .get(&DataKey::Settlement(bounty_id, milestone_id))
+            .expect("Settlement config not found")
+    }
+
+    /// Check if settlement configuration exists.
+    pub fn has_settlement(env: Env, bounty_id: u64, milestone_id: u32) -> bool {
+        env.storage()
+            .persistent()
+            .has(&DataKey::Settlement(bounty_id, milestone_id))
+    }
+
+    /// Check if bounty was refunded.
+    pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
+        env.storage()
+            .persistent()
+            .has(&DataKey::Refunded(bounty_id))
     }
 }

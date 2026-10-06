@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Symbol};
+use soroban_sdk::{contracttype, Address, Symbol, Vec};
 
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -12,6 +12,7 @@ pub enum BountyStatus {
     MilestonePaid = 6,
     Completed = 7,
     Cancelled = 8,
+    Refunded = 9,
 }
 
 #[contracttype]
@@ -30,6 +31,46 @@ pub enum MilestoneStatus {
 pub enum VoteDecision {
     Approve = 1,
     Reject = 2,
+}
+
+#[contracttype]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AllocationType {
+    Fixed = 1,
+    Percentage = 2,
+}
+
+#[contracttype]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SettlementStatus {
+    None = 0,
+    Pending = 1,
+    Authorized = 2,
+    Executing = 3,
+    Settled = 4,
+    Failed = 5,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RecipientShare {
+    pub recipient: Address,
+    pub amount: i128,
+    pub percentage_bps: u32,
+    pub label: Symbol,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SettlementConfig {
+    pub settlement_id: u32,
+    pub bounty_id: u64,
+    pub milestone_id: u32,
+    pub allocation_type: AllocationType,
+    pub total_amount: i128,
+    pub recipients: Vec<RecipientShare>,
+    pub status: SettlementStatus,
+    pub is_immutable: bool,
 }
 
 #[contracttype]
@@ -67,4 +108,6 @@ pub enum DataKey {
     Bounty(u64),
     Milestone(u64, u32),
     Vote(u64, u32, Address),
+    Settlement(u64, u32),
+    Refunded(u64),
 }
