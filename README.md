@@ -180,6 +180,25 @@ The test suite covers:
 
 ---
 
+## 📸 Level 2 Evidence & Demonstration
+
+### 1. Level 2 On-Chain Bounty Dashboard & Soroban Escrow
+The dashboard displays bounties with live milestone progress indicators (`1 / 1 complete`), locked Soroban contract escrow balances, and direct links to the deployed contract on Stellar Expert (`CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52`).
+
+![Level 2 Dashboard & Escrow](docs/evidence/level2_dashboard.png)
+
+### 2. Milestone Deliverable Review & Community Approval
+Demonstrating the live deliverable submission (`pull/2`), reviewer voting interface, and approval quorum verification directly recorded on-chain.
+
+![Milestone Review & Approval](docs/evidence/milestone_review_approval.png)
+
+### 3. Live Demo Video: Milestone Voting & Conditional Release
+Demonstrating the full Level 2 lifecycle: wallet connection, bounty creation, milestone submission with deliverable PR, multi-wallet community verification, threshold satisfaction, conditional payment unlock, and contract activity indexing.
+
+![Level 2 Workflow Demo](docs/evidence/level2_demo.webp)
+
+---
+
 ## 📄 License
 
 MIT
