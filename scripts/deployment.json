@@ -1,0 +1,11 @@
+{
+  "network": "testnet",
+  "contractAddress": "CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52",
+  "wasmHash": "48e83035a07f93569ebe473bb4c0d74ee91830e222b33d3fea1f22a33d4b1db7",
+  "deployer": "GD6DQE75KKO6Y3SA76IXGQH2GFFUULPUTQUQ3LXIPRDJ66K2UUGDF2DN",
+  "uploadTxHash": "9fb1729caeb1772db3a31c5d32bc5ff11fe68afd0705643bc8cfcbe8d52165b0",
+  "createTxHash": "104780990d357ac1be516bf648971c899982f3ec9b248ca0a2bc82f13d084ccc",
+  "initTxHash": "0fcb3ec79bac12048b0380d5b2887c8ff312bd66e9e55f19b09b76ad3a9dc330",
+  "explorerUrl": "https://stellar.expert/explorer/testnet/contract/CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52",
+  "deployedAt": "2026-10-06T18:24:43.000Z"
+}

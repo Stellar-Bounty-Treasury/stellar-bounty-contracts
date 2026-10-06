@@ -1,41 +1,68 @@
 # 📜 Stellar Bounty Treasury — Smart Contracts
 
-Soroban smart contract foundation and specifications for **Stellar Bounty Treasury**, a community-funded bounty payment platform on the Stellar network.
+Authoritative Soroban smart contract repository for **Stellar Bounty Treasury**, enforcing on-chain bounty funding escrow, milestone lifecycle management, community verification quorums, and conditional payment release.
 
 ---
 
 ## 📌 What It Does
 
-At **Level 1 (White Belt)**, this repository establishes the formal Soroban contract architecture, build system, types, storage schemas, and unit testing harness.
+At **Level 2 (Yellow Belt)**, the smart contract is the authoritative financial and state machine layer:
 
-The complete on-chain escrow, milestone verification, and conditional settlement systems are planned for future levels. In Level 1, we lay down the strict data structures, storage keys, authorization patterns, and unit tests to ensure that Level 2 and Level 3 build on an immutable and audited foundation.
+$$\text{The contract enforces. The backend observes. The frontend orchestrates.}$$
+
+* **On-Chain Escrow Vault**: User contributions are transferred directly to the contract account address rather than the creator's wallet. Funds cannot be withdrawn or drained without meeting milestone criteria.
+* **On-Chain Milestones**: Milestones are stored with specific reward allocations, designated recipient addresses, and verification approval thresholds.
+* **Milestone Submission**: Designated contributors submit off-chain evidence references (e.g. GitHub PR URLs, commit hashes, or CIDs).
+* **Community Verification**: Eligible community reviewers cast cryptographic votes (`Approve` or `Reject`). The contract strictly enforces single-vote-per-reviewer replay prevention.
+* **Conditional Payment Release**: Settlement is rejected until the milestone's approval threshold is reached on-chain. Once approved, the contract authoritatively disburses the exact allocated reward to the contributor.
+* **Structured Events**: The contract emits structured events (`bounty_created`, `bounty_funded`, `milestone_created`, `milestone_submitted`, `milestone_approved`, `milestone_paid`) for backend indexing.
 
 ---
 
-## 🏛️ Planned Contract Architecture
+## 🌐 Testnet Deployment
 
-The on-chain smart contract is architected into modular components:
+| Parameter | Value |
+| :--- | :--- |
+| **Network** | **Stellar Testnet** (`Test SDF Network ; September 2015`) |
+| **Contract ID** | **[`CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52`](https://stellar.expert/explorer/testnet/contract/CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52)** |
+| **Deployer Address** | `GD6DQE75KKO6Y3SA76IXGQH2GFFUULPUTQUQ3LXIPRDJ66K2UUGDF2DN` |
+| **WASM Upload Hash** | `9fb1729caeb1772db3a31c5d32bc5ff11fe68afd0705643bc8cfcbe8d52165b0` |
+| **Contract Creation Hash** | `104780990d357ac1be516bf648971c899982f3ec9b248ca0a2bc82f13d084ccc` |
+| **Initialization Hash** | `0fcb3ec79bac12048b0380d5b2887c8ff312bd66e9e55f19b09b76ad3a9dc330` |
 
-```text
-Bounty Treasury Contract
-├── 1. Creation           (On-chain bounty specification, target amount, creator)
-├── 2. Funding            (Escrow vault, contribution ledger, fund lockup)
-├── 3. Milestones         (Deliverable milestones, payout allocations)
-├── 4. Verification       (Attestation, oracle checks, reviewer signatures)
-├── 5. Conditional Release(Time-locks, milestone unlock criteria, quorum verification)
-└── 6. Settlement         (Automated token distribution to maintainers/contributors)
+---
+
+## 🏛️ Contract Interface & Methods
+
+```rust
+// Contract Initialization
+pub fn initialize(env: Env, admin: Address);
+pub fn get_admin(env: Env) -> Address;
+pub fn get_bounty_count(env: Env) -> u64;
+
+// 1. Bounty Creation
+pub fn create_bounty(env: Env, creator: Address, title: Symbol, target_amount: i128, token: Address) -> u64;
+
+// 2. Bounty Escrow Funding
+pub fn fund_bounty(env: Env, funder: Address, bounty_id: u64, amount: i128);
+
+// 3. Milestone Creation
+pub fn create_milestone(env: Env, creator: Address, bounty_id: u64, description: Symbol, reward_amount: i128, recipient: Address, approval_threshold: u32) -> u32;
+
+// 4. Milestone Submission
+pub fn submit_milestone(env: Env, caller: Address, bounty_id: u64, milestone_id: u32, submission_ref: Symbol);
+
+// 5. Community Verification (Approve / Reject)
+pub fn verify_milestone(env: Env, reviewer: Address, bounty_id: u64, milestone_id: u32, decision: VoteDecision);
+
+// 6. Conditional Payment Release
+pub fn release_milestone_payment(env: Env, caller: Address, bounty_id: u64, milestone_id: u32);
+
+// Queries
+pub fn get_bounty(env: Env, bounty_id: u64) -> Bounty;
+pub fn get_milestone(env: Env, bounty_id: u64, milestone_id: u32) -> Milestone;
+pub fn has_voted(env: Env, bounty_id: u64, milestone_id: u32, reviewer: Address) -> bool;
 ```
-
-### Module Breakdown
-
-| Module | Purpose | Status |
-| :--- | :--- | :--- |
-| **Creation** | Registers bounty ID, title symbol, target XLM amount, and creator auth | **Level 1 (Foundation Active)** |
-| **Funding** | Manages escrow vault address and incoming XLM transfers | *Level 2 Scope* |
-| **Milestones** | Stores breakdown of milestones and percentage distributions | *Level 2 Scope* |
-| **Verification** | Validates milestone proofs from contributors and arbiters | *Level 2 Scope* |
-| **Conditional Release** | Disburses locked funds upon satisfaction of milestone criteria | *Level 2 / Level 3 Scope* |
-| **Settlement** | Multi-recipient payouts and automated refund handling | *Level 3 Scope* |
 
 ---
 
@@ -45,10 +72,11 @@ Bounty Treasury Contract
 
 * Rust 1.80+ (`rustup target add wasm32-unknown-unknown`)
 * Soroban SDK `v22.0.11`
+* Node.js 20+ (for deployment scripts)
 
 ### Running Unit Tests
 
-Execute the unit test suite locally:
+Execute the comprehensive Level 2 test suite locally:
 
 ```bash
 cargo test
@@ -60,93 +88,93 @@ Compile the contract to WebAssembly target:
 
 ```bash
 cargo build --target wasm32-unknown-unknown --release
+npx wasm-opt -Oz --strip-debug --disable-reference-types -o target/wasm32-unknown-unknown/release/stellar_bounty_contracts.wasm target/wasm32-unknown-unknown/release/stellar_bounty_contracts.wasm
 ```
 
-The resulting compiled WASM will be located at:
-`target/wasm32-unknown-unknown/release/stellar_bounty_contracts.wasm`
+### Deploying to Stellar Testnet
+
+```bash
+node scripts/deploy.cjs
+```
 
 ---
 
 ## ⚙️ Required Environment Variables
 
-For local contract compilation and testing, standard Cargo tooling is used. No `.env` secrets or private keys are required or committed:
-
-* `STELLAR_NETWORK=testnet` (for future contract deployment via Stellar CLI)
-* `SOROBAN_RPC_URL=https://soroban-testnet.stellar.org` (for future deployment)
+For deployment and RPC queries:
+* `STELLAR_NETWORK=testnet`
+* `SOROBAN_RPC_URL=https://soroban-testnet.stellar.org`
+* `DEPLOYER_SECRET_KEY=S...` (for deploying new contract instances)
 
 ---
 
 ## 👛 How to Connect a Stellar Testnet Wallet
 
-For smart contracts:
-1. Generate an identity using Stellar CLI or Freighter wallet.
-2. In Soroban contracts, callers authenticate invocations using `Address::require_auth()`.
-3. In Level 1 tests, simulated test accounts and auth mocks are provisioned via `env.mock_all_auths()` and `Address::generate(&env)`.
+Callers interact with the contract using their Stellar public keys:
+1. When invoking state-mutating functions (`fund_bounty`, `submit_milestone`, `verify_milestone`, `release_milestone_payment`), Soroban requires caller cryptographic authorization (`caller.require_auth()`).
+2. In browser environments, users sign invocations using **Freighter Wallet** or imported Testnet signers.
+3. In local unit tests, simulated callers and auth mocks are handled via `env.mock_all_auths()`.
 
 ---
 
 ## 📝 How to Create a Bounty
 
-At the contract layer, bounties are created via the contract's public method:
+At the contract layer, invoke `create_bounty`:
 
 ```rust
-pub fn create_bounty(
-    env: Env,
-    creator: Address,
-    title: Symbol,
-    target_amount: i128,
-) -> u64
+let bounty_id = client.create_bounty(&creator, &title, &target_amount, &token_address);
 ```
 
-* Requires authorization from the `creator` address.
-* Enforces positive `target_amount`.
-* Increments internal persistent bounty counter and saves the `Bounty` record to storage.
+* Authenticated by `creator.require_auth()`.
+* Generates a sequential, auto-incrementing ID.
+* Emits a `(bounty, created)` event.
 
 ---
 
 ## 💸 How to Fund a Bounty
 
-At Level 1, funding is executed peer-to-peer on Stellar Testnet and validated via Horizon. For Level 2, the contract funding module will accept Soroban token transfers:
-1. Contributor invokes `fund_bounty(env, contributor: Address, bounty_id: u64, amount: i128)`.
-2. The contract invokes the Stellar Asset Contract (SAC) to transfer tokens to the contract escrow vault.
-3. The contract updates the persistent `funded_amount` state.
+Funding transacts native tokens into the contract's escrow address:
+
+```rust
+client.fund_bounty(&funder, &bounty_id, &amount);
+```
+
+* Authenticated by `funder.require_auth()`.
+* Invokes `token::Client::transfer(&funder, &contract_address, &amount)`.
+* Updates on-chain funded balance and transitions status to `Funded` when target is reached.
 
 ---
 
 ## 🔍 How to Verify a Transaction
 
-In Soroban contracts:
-1. Transactions generate on-chain events via `env.events().publish(...)`.
-2. Unit tests verify state changes using contract clients (`client.get_bounty(&bounty_id)`).
-3. On Testnet, contract invocations are verified via Soroban RPC `getTransaction` queries.
+1. In Soroban contracts, all state mutations emit structured events via `env.events().publish(...)`.
+2. On Testnet, contract invocations are queried using Soroban RPC `getTransaction` by transaction hash.
+3. Contract state can be directly verified on [Stellar.Expert Testnet Contract Explorer](https://stellar.expert/explorer/testnet/contract/CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52).
 
 ---
 
-## 🔄 How the Repository Will Evolve in Levels 2 and 3
+## 🔄 How the Repository Will Evolve in Level 3
 
 ```text
-LEVEL 1 (Current)
-  Create Bounty Foundation ➔ Struct & Storage Key Validation ➔ WASM Build & Testing Harness
+LEVEL 2 (Current)
+  On-chain Escrow Vault ➔ Milestone Submissions ➔ Community Quorum Verification ➔ Single-Recipient Conditional Release
 
-LEVEL 2 (Next Milestone)
-  On-chain Escrow Vault ➔ Milestone Submissions ➔ Community/Arbiter Verification ➔ Conditional Release
-
-LEVEL 3 (Complete Bounty Treasury)
-  Multi-recipient Distribution ➔ Realtime Contract Event Streaming ➔ Autonomous Treasury Governance
+LEVEL 3 (Future)
+  Multi-recipient Settlement ➔ Settlement Router ➔ Realtime Contract Event Streaming ➔ Autonomous DAO Arbitration
 ```
 
 ---
 
 ## 🧪 Test Suite Coverage
 
-The Level 1 contract test suite covers:
-1. `test_initialize_and_get_admin`: Verifies contract initialization and storage of admin identity.
-2. `test_double_initialization_fails`: Asserts panic when attempting re-initialization.
-3. `test_create_and_get_bounty`: Verifies creation of bounty with creator authorization, target amount, and initial open status.
-4. `test_multiple_bounties_sequential_ids`: Ensures sequential auto-incrementing ID assignment across multiple bounties.
-5. `test_create_bounty_zero_target_fails`: Asserts rejection of zero target amounts.
-6. `test_create_bounty_negative_target_fails`: Asserts rejection of negative amounts.
-7. `test_get_nonexistent_bounty_fails`: Asserts panic when querying unindexed bounty IDs.
+The test suite covers:
+1. `test_initialize_and_create_bounty`: Initializes contract, sets admin, and creates bounty.
+2. `test_fund_bounty_escrow`: Transfers tokens to contract escrow and validates contract balance.
+3. `test_end_to_end_milestone_verification_and_settlement`: Verifies complete lifecycle: creation -> funding -> milestone creation -> contributor submission -> 2 reviewers approve -> conditional release executes -> contributor balance increases.
+4. `test_duplicate_reviewer_vote_fails`: Asserts panic when a reviewer attempts to vote twice on the same milestone.
+5. `test_payment_release_fails_if_not_approved`: Asserts that attempting payment release before reaching threshold fails.
+6. `test_unauthorized_contributor_submission_fails`: Asserts that an unauthorized caller cannot submit a milestone assigned to someone else.
+7. `test_non_creator_cannot_add_milestones`: Asserts that non-creators cannot create milestones on a bounty.
 
 ---
 
