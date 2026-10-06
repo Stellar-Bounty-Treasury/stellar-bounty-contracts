@@ -2,6 +2,8 @@
 
 Authoritative Soroban smart contract repository for **Stellar Bounty Treasury**, enforcing on-chain bounty funding escrow, milestone lifecycle management, community verification quorums, and conditional payment release.
 
+**🌐 Live Frontend Application**: [https://stellar-bounty-treasury-2676.netlify.app](https://stellar-bounty-treasury-2676.netlify.app)
+
 ---
 
 ## 📌 What It Does
