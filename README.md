@@ -6,6 +6,19 @@ Authoritative Soroban smart contract repository for **Stellar Bounty Treasury**,
 
 ---
 
+## 🎥 Full Demonstration Video (Level 2 Lifecycle)
+
+> **Watch the full Level 2 lifecycle**: wallet connection, bounty creation with Soroban escrow lock, deliverable PR submission, multi-reviewer community voting, threshold satisfaction, conditional payment unlock, and contract event indexing.
+
+[![Watch Stellar Bounty Treasury Level 2 Demo](docs/evidence/level2_demo.gif)](docs/evidence/level2_demo.mp4)
+
+* 🎬 **Direct MP4 Video File**: [Download / Watch MP4 (1.7 MB)](docs/evidence/level2_demo.mp4)
+* 🎬 **Direct WebM Video File**: [Download / Watch WebM (4.3 MB)](docs/evidence/level2_demo.webm)
+* 🎞️ **High-Resolution Animated Preview**: [docs/evidence/level2_demo.gif](docs/evidence/level2_demo.gif)
+* 🌐 **Live Web Application**: [https://stellar-bounty-treasury-2676.netlify.app](https://stellar-bounty-treasury-2676.netlify.app)
+
+---
+
 ## 📌 What It Does
 
 At **Level 2 (Yellow Belt)**, the smart contract is the authoritative financial and state machine layer:
@@ -195,9 +208,10 @@ Demonstrating the live deliverable submission (`pull/2`), reviewer voting interf
 ### 3. Live Demo Video: Milestone Voting & Conditional Release
 Demonstrating the full Level 2 lifecycle: wallet connection, bounty creation, milestone submission with deliverable PR, multi-wallet community verification, threshold satisfaction, conditional payment unlock, and contract activity indexing.
 
-![Level 2 Workflow Demo Animation](docs/evidence/level2_demo.gif)
+[![Level 2 Workflow Demo Animation](docs/evidence/level2_demo.gif)](docs/evidence/level2_demo.mp4)
 
-* **Direct Video File**: [Download / View WebM Video (4.3 MB)](docs/evidence/level2_demo.webm)
+* 🎬 **Direct MP4 Video File**: [Download / Watch MP4 (1.7 MB)](docs/evidence/level2_demo.mp4)
+* 🎬 **Direct WebM Video File**: [Download / Watch WebM (4.3 MB)](docs/evidence/level2_demo.webm)
 
 ---
 
