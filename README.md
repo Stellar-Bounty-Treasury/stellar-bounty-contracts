@@ -195,7 +195,9 @@ Demonstrating the live deliverable submission (`pull/2`), reviewer voting interf
 ### 3. Live Demo Video: Milestone Voting & Conditional Release
 Demonstrating the full Level 2 lifecycle: wallet connection, bounty creation, milestone submission with deliverable PR, multi-wallet community verification, threshold satisfaction, conditional payment unlock, and contract activity indexing.
 
-![Level 2 Workflow Demo](docs/evidence/level2_demo.webp)
+![Level 2 Workflow Demo Animation](docs/evidence/level2_demo.gif)
+
+* **Direct Video File**: [Download / View WebM Video (4.3 MB)](docs/evidence/level2_demo.webm)
 
 ---
 
