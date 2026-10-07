@@ -228,7 +228,7 @@ fn test_non_creator_cannot_add_milestones() {
 }
 
 // -------------------------------------------------------------
-// LEVEL 3 (ORANGE BELT) ADVANCED TESTS
+// PROGRAMMABLE SETTLEMENT ROUTER & ESCROW ADVANCED TESTS
 // -------------------------------------------------------------
 
 #[test]

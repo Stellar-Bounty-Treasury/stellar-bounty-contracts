@@ -14,10 +14,34 @@ The contracts enforce trustless milestone-based conditional escrow, community go
 
 ## 🎬 Product Demonstration
 
-![Stellar Bounty Treasury Walkthrough](docs/evidence/level3_demo.gif)
+![Stellar Bounty Treasury Walkthrough](docs/evidence/treasury_demo.gif)
 
-* **Direct Video Links**: [High-Definition MP4](docs/evidence/level3_demo.mp4) • [WebM Video](docs/evidence/level3_demo.webm)
+* **Direct Video Links**: [High-Definition MP4](docs/evidence/treasury_demo.mp4) • [WebM Video](docs/evidence/treasury_demo.webm)
 * **Live Web Application**: [https://stellar-bounty-treasury-2676.netlify.app](https://stellar-bounty-treasury-2676.netlify.app)
+
+---
+
+## 📸 Product Interface & Functionality Walkthrough
+
+### 1. Escrow Telemetry & Treasury Governance
+Decentralized treasury interface displaying live locked token volume, active escrow balances, and milestone progress on Stellar.
+![Treasury Dashboard & Telemetry](docs/screenshots/01_treasury_dashboard.png)
+
+### 2. Trustless Bounty Creation & Vault Locking
+Deploys a dedicated escrow instance on the Soroban smart contract, locking creator deposits until milestones are verified.
+![Create Programmable Bounty](docs/screenshots/02_create_bounty_modal.png)
+
+### 3. Milestone Work Submission & Approval Quorum
+Tracks milestone submissions and on-chain governance verification votes with threshold enforcement.
+![Milestone Governance & Work Verification](docs/screenshots/03_milestone_governance.png)
+
+### 4. Programmable Settlement Router Engine
+Enforces atomic token distribution across multiple recipient addresses. Percentage allocations are strictly verified to total 10,000 basis points (100.00%).
+![Settlement Router Configuration](docs/screenshots/04_settlement_router_builder.png)
+
+### 5. Atomic Settlement Execution & Event Dispatch
+Executes atomic disbursement via `execute_settlement`, releasing funds to all recipients simultaneously in a single Soroban transaction.
+![Pre-Flight Settlement Preview](docs/screenshots/05_settlement_execution_preview.png)
 
 ---
 
@@ -74,7 +98,7 @@ The contracts enforce trustless milestone-based conditional escrow, community go
 ### 3. ⚛️ Atomic Execution & State Machine
 * All recipient transfers execute within a single Soroban atomic transaction. If any transfer fails, the entire transaction reverts cleanly.
 * Explicit settlement states:
-  $$\text{Pending} \longrightarrow \text{Authorized} \longrightarrow \text{Executing} \longrightarrow \text{Settled}$$
+  > **`Pending`** ➔ **`Authorized`** ➔ **`Executing`** ➔ **`Settled`**
 * **Replay Protection**: A settlement cannot be executed twice (`AlreadySettled` assertion).
 
 ### 4. 💸 Escrow Refund / Recovery Mechanism

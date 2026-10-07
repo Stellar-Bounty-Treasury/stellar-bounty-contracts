@@ -525,7 +525,7 @@ impl BountyTreasuryContract {
                 (bounty_id, milestone_id, settlement.total_amount),
             );
         } else {
-            // Default single-recipient fallback (Level 2 compatibility)
+            // Default single-recipient direct transfer fallback
             token_client.transfer(
                 &env.current_contract_address(),
                 &milestone.recipient,
