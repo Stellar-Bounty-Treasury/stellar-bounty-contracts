@@ -9,7 +9,7 @@ pub mod types;
 mod test;
 
 use types::{
-    AllocationType, Bounty, BountyStatus, DataKey, Milestone, MilestoneStatus,
+    AllocationType, Bounty, BountyStatus, DataKey, Error, Milestone, MilestoneStatus,
     RecipientShare, SettlementConfig, SettlementStatus, VoteDecision,
 };
 
@@ -90,7 +90,11 @@ impl BountyTreasuryContract {
     }
 
     /// 2. Fund bounty escrow vault (transfers tokens from funder to contract).
-    pub fn fund_bounty(env: Env, funder: Address, bounty_id: u64, amount: i128) {
+    ///
+    /// Returns `Err(Error::BountyAlreadyFunded)` when the bounty has already
+    /// reached its funding target — duplicate deposit calls are rejected
+    /// instead of silently over-funding the escrow.
+    pub fn fund_bounty(env: Env, funder: Address, bounty_id: u64, amount: i128) -> Result<(), Error> {
         funder.require_auth();
 
         if amount <= 0 {
@@ -110,6 +114,11 @@ impl BountyTreasuryContract {
             panic!("Cannot fund cancelled, completed, or refunded bounty");
         }
 
+        // Duplicate deposit guard: an already-funded bounty accepts no further deposits.
+        if bounty.status == BountyStatus::Funded {
+            return Err(Error::BountyAlreadyFunded);
+        }
+
         // Authoritatively lock tokens in contract escrow
         let token_client = token::Client::new(&env, &bounty.token);
         token_client.transfer(&funder, &env.current_contract_address(), &amount);
@@ -127,6 +136,8 @@ impl BountyTreasuryContract {
             (symbol_short!("bounty"), symbol_short!("funded")),
             (bounty_id, funder, amount),
         );
+
+        Ok(())
     }
 
     /// 3. Create an on-chain milestone with allocation and verification threshold.
