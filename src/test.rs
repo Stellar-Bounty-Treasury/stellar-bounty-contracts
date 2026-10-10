@@ -622,3 +622,46 @@ fn test_bounty_completion_fails_if_milestone_unpaid() {
     // Milestone 1 is still pending -> completing bounty MUST fail!
     client.complete_bounty(&creator, &b_id);
 }
+
+// -------------------------------------------------------------
+// ISSUE #16 REGRESSION: duplicate deposit on an already-funded
+// bounty is rejected with Error::BountyAlreadyFunded.
+// -------------------------------------------------------------
+#[test]
+fn test_duplicate_deposit_rejected_with_bounty_already_funded() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin);
+
+    let (token_address, asset_client, token_client) = setup_test_token(&env, &admin);
+    let creator = Address::generate(&env);
+    let funder = Address::generate(&env);
+
+    asset_client.mint(&funder, &200_0000000i128);
+
+    let b_id = client.create_bounty(
+        &creator,
+        &symbol_short!("DupFund"),
+        &100_0000000i128,
+        &token_address,
+    );
+
+    // Full funding succeeds and flips the bounty to Funded.
+    client.fund_bounty(&funder, &b_id, &100_0000000i128);
+    let bounty = client.get_bounty(&b_id);
+    assert_eq!(bounty.status, BountyStatus::Funded);
+
+    // Duplicate deposit call MUST be rejected with the new error code.
+    let res = client.try_fund_bounty(&funder, &b_id, &50_0000000i128);
+    assert_eq!(res, Err(Ok(Error::BountyAlreadyFunded)));
+
+    // Escrow and bounty state are untouched by the rejected call.
+    assert_eq!(token_client.balance(&contract_id), 100_0000000i128);
+    let bounty = client.get_bounty(&b_id);
+    assert_eq!(bounty.funded_amount, 100_0000000i128);
+    assert_eq!(bounty.status, BountyStatus::Funded);
+}

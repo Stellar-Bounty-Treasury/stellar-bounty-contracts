@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Symbol, Vec};
+use soroban_sdk::{contracterror, contracttype, Address, Symbol, Vec};
 
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -110,4 +110,13 @@ pub enum DataKey {
     Vote(u64, u32, Address),
     Settlement(u64, u32),
     Refunded(u64),
+}
+
+/// Contract-level error codes for the Bounty Treasury.
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum Error {
+    /// A deposit was attempted on a bounty that is already fully funded.
+    BountyAlreadyFunded = 1,
 }
