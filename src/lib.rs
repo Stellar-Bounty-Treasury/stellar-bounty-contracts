@@ -1283,6 +1283,12 @@ impl BountyTreasuryContract {
         Self::get_bounty_count(env)
     }
 
+
+    /// Query semantic protocol version (major, minor, patch).
+    pub fn get_protocol_version(_env: Env) -> (u32, u32, u32) {
+        (1u32, 2u32, 0u32)
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
