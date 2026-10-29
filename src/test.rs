@@ -759,3 +759,35 @@ fn test_platform_fee_deduction_during_milestone_settlement() {
     assert_eq!(token_client.balance(&treasury), 2_5000000i128);
     assert_eq!(token_client.balance(&dev), 97_5000000i128);
 }
+
+#[test]
+fn test_milestone_deadline_extension_and_validity() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin);
+
+    let (token_address, asset_client, _) = setup_test_token(&env, &admin);
+    let creator = Address::generate(&env);
+    let funder = Address::generate(&env);
+    let dev = Address::generate(&env);
+
+    asset_client.mint(&funder, &1000_0000000i128);
+    let b_id = client.create_bounty(&creator, &symbol_short!("TimeTest"), &100_0000000i128, &token_address);
+    client.fund_bounty(&funder, &b_id, &100_0000000i128);
+
+    let m_id = client.create_milestone(&creator, &b_id, &symbol_short!("M1"), &100_0000000i128, &dev, &1u32);
+
+    // Extend deadline into the future
+    client.extend_milestone_deadline(&creator, &b_id, &m_id, &1000000u64);
+    let m = client.get_milestone(&b_id, &m_id);
+    assert_eq!(m.deadline, 1000000u64);
+
+    // Submitting within deadline succeeds
+    client.submit_milestone(&dev, &b_id, &m_id, &symbol_short!("done"));
+    let m_done = client.get_milestone(&b_id, &m_id);
+    assert_eq!(m_done.status, MilestoneStatus::Submitted);
+}
