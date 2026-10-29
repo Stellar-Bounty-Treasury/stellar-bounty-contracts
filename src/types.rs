@@ -42,6 +42,23 @@ pub enum Role {
     Operator = 3,
 }
 
+
+#[contracttype]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DisputeStatus {
+    None = 0,
+    Active = 1,
+    Resolved = 2,
+    Cancelled = 3,
+}
+
+#[contracttype]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DisputeResolution {
+    FavorContributor = 1,
+    FavorCreator = 2,
+}
+
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BountyStatus {
