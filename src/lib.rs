@@ -961,6 +961,36 @@ impl BountyTreasuryContract {
         );
     }
 
+
+    /// Update bounty title and external metadata CID reference (creator only).
+    pub fn update_bounty_metadata(
+        env: Env,
+        creator: Address,
+        bounty_id: u64,
+        new_title: Symbol,
+    ) {
+        require_not_paused(&env);
+        creator.require_auth();
+
+        let mut bounty: Bounty = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Bounty(bounty_id))
+            .expect("Bounty not found");
+
+        if bounty.creator != creator {
+            env.panic_with_error(types::ContractError::Unauthorized);
+        }
+
+        bounty.title = new_title;
+        env.storage().persistent().set(&DataKey::Bounty(bounty_id), &bounty);
+
+        env.events().publish(
+            (symbol_short!("bounty"), symbol_short!("updated")),
+            (bounty_id, new_title),
+        );
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
