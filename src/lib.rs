@@ -95,6 +95,7 @@ impl BountyTreasuryContract {
             token,
             milestone_count: 0,
             status: BountyStatus::Open,
+            expiry_timestamp: 0,
         };
 
         env.storage().persistent().set(&DataKey::Bounty(counter), &bounty);

@@ -126,6 +126,7 @@ pub struct Bounty {
     pub token: Address,
     pub milestone_count: u32,
     pub status: BountyStatus,
+    pub expiry_timestamp: u64,
 }
 
 #[contracttype]
