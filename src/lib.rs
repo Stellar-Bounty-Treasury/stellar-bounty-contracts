@@ -379,6 +379,10 @@ impl BountyTreasuryContract {
             .get(&DataKey::Milestone(bounty_id, milestone_id))
             .expect("Milestone not found");
 
+        if Self::has_active_dispute(env.clone(), bounty_id, milestone_id) {
+            panic!("Cannot settle milestone with active dispute");
+        }
+
         // Allow designated milestone recipient OR designated first settlement recipient
         let settlement_key = DataKey::Settlement(bounty_id, milestone_id);
         let is_authorized_submitter = if milestone.recipient == caller {
