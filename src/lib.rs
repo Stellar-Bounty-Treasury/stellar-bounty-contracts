@@ -117,6 +117,9 @@ impl BountyTreasuryContract {
         if amount <= 0 {
             env.panic_with_error(types::ContractError::InvalidFundingAmount);
         }
+        if amount < 1_0000000i128 {
+            env.panic_with_error(types::ContractError::AmountTooSmall);
+        }
 
         let mut bounty: Bounty = env
             .storage()
