@@ -485,6 +485,12 @@ impl BountyTreasuryContract {
                 (symbol_short!("milestone"), symbol_short!("approved")),
                 (bounty_id, milestone_id, milestone.approvals),
             );
+        } else if milestone.rejections >= milestone.approval_threshold {
+            milestone.status = MilestoneStatus::Rejected;
+            env.events().publish(
+                (symbol_short!("milestone"), symbol_short!("rejected")),
+                (bounty_id, milestone_id, milestone.rejections),
+            );
         } else {
             milestone.status = MilestoneStatus::UnderReview;
         }
@@ -990,7 +996,7 @@ impl BountyTreasuryContract {
             env.panic_with_error(types::ContractError::Unauthorized);
         }
 
-        bounty.title = new_title;
+        bounty.title = new_title.clone();
         env.storage().persistent().set(&DataKey::Bounty(bounty_id), &bounty);
 
         env.events().publish(

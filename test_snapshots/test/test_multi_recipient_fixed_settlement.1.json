@@ -545,6 +545,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "expiry_timestamp"
+                      },
+                      "val": {
+                        "u64": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "funded_amount"
                       },
                       "val": {
@@ -679,6 +687,14 @@
                       },
                       "val": {
                         "u64": 1
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "deadline"
+                      },
+                      "val": {
+                        "u64": 0
                       }
                     },
                     {

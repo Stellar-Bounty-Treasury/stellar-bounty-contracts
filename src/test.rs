@@ -818,3 +818,38 @@ fn test_milestone_cancellation_lifecycle() {
     let m = client.get_milestone(&b_id, &m_id);
     assert_eq!(m.status, MilestoneStatus::Rejected);
 }
+
+#[test]
+fn test_milestone_resubmission_flow() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin);
+
+    let (token_address, asset_client, _) = setup_test_token(&env, &admin);
+    let creator = Address::generate(&env);
+    let funder = Address::generate(&env);
+    let dev = Address::generate(&env);
+    let reviewer = Address::generate(&env);
+
+    asset_client.mint(&funder, &1000_0000000i128);
+    let b_id = client.create_bounty(&creator, &symbol_short!("Resub"), &100_0000000i128, &token_address);
+    client.fund_bounty(&funder, &b_id, &100_0000000i128);
+
+    let m_id = client.create_milestone(&creator, &b_id, &symbol_short!("M1"), &100_0000000i128, &dev, &1u32);
+
+    // Initial submission and rejection
+    client.submit_milestone(&dev, &b_id, &m_id, &symbol_short!("v1"));
+    client.verify_milestone(&reviewer, &b_id, &m_id, &VoteDecision::Reject);
+
+    // Resubmit with revised reference
+    client.resubmit_milestone(&dev, &b_id, &m_id, &symbol_short!("v2_fixed"));
+    let m = client.get_milestone(&b_id, &m_id);
+    assert_eq!(m.status, MilestoneStatus::Submitted);
+    assert_eq!(m.submission_ref, symbol_short!("v2_fixed"));
+    assert_eq!(m.approvals, 0);
+    assert_eq!(m.rejections, 0);
+}
