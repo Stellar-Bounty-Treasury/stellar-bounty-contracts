@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::*;
-use types::Role;
+use types::{DisputeResolution, DisputeStatus, Role};
 use soroban_sdk::{
     symbol_short,
     testutils::Address as _,
@@ -852,4 +852,36 @@ fn test_milestone_resubmission_flow() {
     assert_eq!(m.submission_ref, symbol_short!("v2_fixed"));
     assert_eq!(m.approvals, 0);
     assert_eq!(m.rejections, 0);
+}
+
+#[test]
+fn test_dispute_filing_lifecycle() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin);
+
+    let (token_address, asset_client, _) = setup_test_token(&env, &admin);
+    let creator = Address::generate(&env);
+    let funder = Address::generate(&env);
+    let dev = Address::generate(&env);
+
+    asset_client.mint(&funder, &1000_0000000i128);
+    let b_id = client.create_bounty(&creator, &symbol_short!("Dispute"), &100_0000000i128, &token_address);
+    client.fund_bounty(&funder, &b_id, &100_0000000i128);
+
+    let m_id = client.create_milestone(&creator, &b_id, &symbol_short!("M1"), &100_0000000i128, &dev, &1u32);
+
+    assert_eq!(client.has_active_dispute(&b_id, &m_id), false);
+
+    // Creator files dispute
+    client.file_dispute(&creator, &b_id, &m_id, &symbol_short!("LowQual"));
+    assert_eq!(client.has_active_dispute(&b_id, &m_id), true);
+
+    let dispute = client.get_dispute(&b_id, &m_id);
+    assert_eq!(dispute.status, DisputeStatus::Active);
+    assert_eq!(dispute.reason, symbol_short!("LowQual"));
 }
