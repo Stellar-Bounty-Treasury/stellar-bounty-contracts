@@ -55,7 +55,7 @@ impl BountyTreasuryContract {
         creator.require_auth();
 
         if target_amount <= 0 {
-            panic!("Target amount must be positive");
+            env.panic_with_error(types::ContractError::InvalidTargetAmount);
         }
 
         let mut counter: u64 = env
