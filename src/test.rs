@@ -720,3 +720,42 @@ fn test_platform_fee_exceeding_cap_fails() {
     // 600 BPS exceeds 500 BPS max cap -> must panic!
     client.set_platform_fee(&admin, &600u32, &treasury);
 }
+
+#[test]
+fn test_platform_fee_deduction_during_milestone_settlement() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    client.initialize(&admin);
+
+    // Set 250 BPS (2.5%) fee
+    client.set_platform_fee(&admin, &250u32, &treasury);
+
+    let (token_address, asset_client, token_client) = setup_test_token(&env, &admin);
+    let creator = Address::generate(&env);
+    let funder = Address::generate(&env);
+    let dev = Address::generate(&env);
+    let reviewer = Address::generate(&env);
+
+    asset_client.mint(&funder, &1000_0000000i128);
+
+    let b_id = client.create_bounty(&creator, &symbol_short!("FeeTest"), &100_0000000i128, &token_address);
+    client.fund_bounty(&funder, &b_id, &100_0000000i128);
+
+    let m_id = client.create_milestone(&creator, &b_id, &symbol_short!("Dev"), &100_0000000i128, &dev, &1u32);
+
+    client.submit_milestone(&dev, &b_id, &m_id, &symbol_short!("pr1"));
+    client.verify_milestone(&reviewer, &b_id, &m_id, &VoteDecision::Approve);
+
+    // Execute settlement
+    client.execute_settlement(&creator, &b_id, &m_id);
+
+    // Fee: 100 * 250 / 10000 = 2.5 XLM (2_5000000 stroops)
+    // Dev gets: 97.5 XLM (97_5000000 stroops)
+    assert_eq!(token_client.balance(&treasury), 2_5000000i128);
+    assert_eq!(token_client.balance(&dev), 97_5000000i128);
+}
