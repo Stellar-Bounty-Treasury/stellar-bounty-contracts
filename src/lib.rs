@@ -772,6 +772,24 @@ impl BountyTreasuryContract {
         env.storage().persistent().get(&DataKey::Role(account, role as u32)).unwrap_or(false)
     }
 
+
+    /// Configure platform fee basis points and treasury address (admin only, capped at 500 BPS / 5%).
+    pub fn set_platform_fee(env: Env, admin: Address, fee_bps: u32, fee_recipient: Address) {
+        admin.require_auth();
+        let current_admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap_or_else(|| {
+            env.panic_with_error(types::ContractError::NotInitialized)
+        });
+        if admin != current_admin {
+            env.panic_with_error(types::ContractError::Unauthorized);
+        }
+        if fee_bps > 500 {
+            env.panic_with_error(types::ContractError::InvalidFeeBps);
+        }
+        env.storage().instance().set(&DataKey::PlatformFeeBps, &fee_bps);
+        env.storage().instance().set(&DataKey::FeeRecipient, &fee_recipient);
+        env.events().publish((symbol_short!("fee"), symbol_short!("updated")), (fee_bps, fee_recipient));
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
