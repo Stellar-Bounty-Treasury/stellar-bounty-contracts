@@ -94,7 +94,7 @@ impl BountyTreasuryContract {
         funder.require_auth();
 
         if amount <= 0 {
-            panic!("Funding amount must be positive");
+            env.panic_with_error(types::ContractError::InvalidFundingAmount);
         }
 
         let mut bounty: Bounty = env
