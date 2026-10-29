@@ -133,3 +133,25 @@ fn test_invariant_rbac_escalation_defense() {
     client.grant_role(&admin, &arbitrator, &Role::Arbitrator);
     assert!(client.has_role(&arbitrator, &Role::Arbitrator));
 }
+
+#[test]
+fn test_invariant_dispute_verdict_finality() {
+    let (env, client, admin, _treasury, token_address, asset_client, _tok_cli) = setup_test_env();
+    let creator = Address::generate(&env);
+    let contributor = Address::generate(&env);
+    let arbitrator = Address::generate(&env);
+
+    client.grant_role(&admin, &arbitrator, &Role::Arbitrator);
+
+    let bounty_id = client.create_bounty(&creator, &symbol_short!("B"), &1000_0000000i128, &token_address);
+    asset_client.mint(&creator, &1000_0000000i128);
+    client.fund_bounty(&creator, &bounty_id, &1000_0000000i128);
+
+    let m_id = client.create_milestone(&creator, &bounty_id, &symbol_short!("M"), &1000_0000000i128, &contributor, &100000);
+
+    client.file_dispute(&contributor, &bounty_id, &m_id, &symbol_short!("Unfair"));
+    assert!(client.has_active_dispute(&bounty_id, &m_id));
+
+    client.resolve_dispute(&arbitrator, &bounty_id, &m_id, &DisputeResolution::FavorContributor);
+    assert!(!client.has_active_dispute(&bounty_id, &m_id));
+}
