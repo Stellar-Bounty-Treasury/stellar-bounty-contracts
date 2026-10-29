@@ -920,6 +920,16 @@ impl BountyTreasuryContract {
         );
     }
 
+
+    /// Query whether a bounty escrow is eligible for refund recovery.
+    pub fn can_refund(env: Env, bounty_id: u64) -> bool {
+        if let Some(bounty) = env.storage().persistent().get::<DataKey, Bounty>(&DataKey::Bounty(bounty_id)) {
+            bounty.funded_amount > 0 && bounty.status != BountyStatus::Completed && bounty.status != BountyStatus::Refunded
+        } else {
+            false
+        }
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
