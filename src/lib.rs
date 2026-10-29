@@ -1277,6 +1277,12 @@ impl BountyTreasuryContract {
         count
     }
 
+
+    /// Retrieve total bounty counter currently recorded.
+    pub fn get_total_bounties_count(env: Env) -> u64 {
+        Self::get_bounty_count(env)
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
