@@ -142,10 +142,10 @@ impl BountyTreasuryContract {
         creator.require_auth();
 
         if reward_amount <= 0 {
-            panic!("Milestone reward must be positive");
+            env.panic_with_error(types::ContractError::InvalidFundingAmount);
         }
         if approval_threshold == 0 {
-            panic!("Approval threshold must be greater than zero");
+            env.panic_with_error(types::ContractError::InvalidThreshold);
         }
 
         let mut bounty: Bounty = env
