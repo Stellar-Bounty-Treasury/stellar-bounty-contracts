@@ -106,3 +106,17 @@ fn test_invariant_storage_rent_ttl_extension() {
     let (_env, client, _admin, _treasury, _token, _asset, _tok_cli) = setup_test_env();
     client.extend_contract_ttl(&10000, &50000);
 }
+
+#[test]
+fn test_invariant_circuit_breaker_lockout() {
+    let (env, client, admin, _treasury, token_address, _asset, _tok_cli) = setup_test_env();
+    client.pause(&admin);
+    assert!(client.is_paused());
+
+    let creator = Address::generate(&env);
+    let res = client.try_create_bounty(&creator, &symbol_short!("B"), &1000_0000000i128, &token_address);
+    assert!(res.is_err());
+
+    client.unpause(&admin);
+    assert!(!client.is_paused());
+}
