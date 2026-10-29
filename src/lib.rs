@@ -1218,6 +1218,15 @@ impl BountyTreasuryContract {
         );
     }
 
+
+    /// Query dispute record details for a milestone.
+    pub fn get_dispute(env: Env, bounty_id: u64, milestone_id: u32) -> types::Dispute {
+        env.storage()
+            .persistent()
+            .get(&DataKey::Dispute(bounty_id, milestone_id))
+            .expect("Dispute not found")
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
