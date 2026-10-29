@@ -878,6 +878,48 @@ impl BountyTreasuryContract {
         );
     }
 
+
+    /// Cancel an unpaid milestone and return reward balance back to bounty pool (creator only).
+    pub fn cancel_milestone(
+        env: Env,
+        creator: Address,
+        bounty_id: u64,
+        milestone_id: u32,
+    ) {
+        require_not_paused(&env);
+        creator.require_auth();
+
+        let bounty: Bounty = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Bounty(bounty_id))
+            .expect("Bounty not found");
+
+        if bounty.creator != creator {
+            env.panic_with_error(types::ContractError::Unauthorized);
+        }
+
+        let mut milestone: Milestone = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Milestone(bounty_id, milestone_id))
+            .expect("Milestone not found");
+
+        if milestone.status == MilestoneStatus::Paid {
+            env.panic_with_error(types::ContractError::AlreadySettled);
+        }
+
+        milestone.status = MilestoneStatus::Rejected;
+        env.storage()
+            .persistent()
+            .set(&DataKey::Milestone(bounty_id, milestone_id), &milestone);
+
+        env.events().publish(
+            (symbol_short!("milestone"), symbol_short!("cancelled")),
+            (bounty_id, milestone_id),
+        );
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
