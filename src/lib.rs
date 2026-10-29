@@ -14,6 +14,13 @@ use types::{
 };
 
 #[contract]
+
+fn require_not_paused(env: &Env) {
+    if env.storage().instance().get(&DataKey::Paused).unwrap_or(false) {
+        env.panic_with_error(types::ContractError::ContractPaused);
+    }
+}
+
 pub struct BountyTreasuryContract;
 
 #[contractimpl]
@@ -52,6 +59,7 @@ impl BountyTreasuryContract {
         target_amount: i128,
         token: Address,
     ) -> u64 {
+        require_not_paused(&env);
         creator.require_auth();
 
         if target_amount <= 0 {
