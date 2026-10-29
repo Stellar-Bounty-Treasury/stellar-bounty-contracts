@@ -1253,6 +1253,30 @@ impl BountyTreasuryContract {
         env.storage().persistent().extend_ttl(&DataKey::Bounty(bounty_id), threshold, extend_to);
     }
 
+
+    /// Execute multiple milestone settlements atomically in a single transaction.
+    pub fn execute_settlements_batch(
+        env: Env,
+        caller: Address,
+        bounty_id: u64,
+        milestone_ids: Vec<u32>,
+    ) -> u32 {
+        require_not_paused(&env);
+        caller.require_auth();
+
+        let count = milestone_ids.len();
+        if count == 0 || count > 5 {
+            panic!("Batch settlements must contain between 1 and 5 milestones");
+        }
+
+        for i in 0..count {
+            let m_id = milestone_ids.get(i).unwrap();
+            Self::execute_settlement(env.clone(), caller.clone(), bounty_id, m_id);
+        }
+
+        count
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
