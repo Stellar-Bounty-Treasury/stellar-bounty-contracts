@@ -26,6 +26,13 @@ fn release_reentrancy_lock(env: &Env) {
     env.storage().instance().set(&DataKey::Locked, &false);
 }
 
+
+fn assert_non_negative_balance(env: &Env, amount: i128) {
+    if amount < 0 {
+        env.panic_with_error(types::ContractError::InsufficientEscrow);
+    }
+}
+
 fn require_not_paused(env: &Env) {
     if env.storage().instance().get(&DataKey::Paused).unwrap_or(false) {
         env.panic_with_error(types::ContractError::ContractPaused);
