@@ -120,3 +120,16 @@ fn test_invariant_circuit_breaker_lockout() {
     client.unpause(&admin);
     assert!(!client.is_paused());
 }
+
+#[test]
+fn test_invariant_rbac_escalation_defense() {
+    let (env, client, admin, _treasury, _token, _asset, _tok_cli) = setup_test_env();
+    let hacker = Address::generate(&env);
+    let arbitrator = Address::generate(&env);
+
+    let res = client.try_grant_role(&hacker, &arbitrator, &Role::Arbitrator);
+    assert!(res.is_err());
+
+    client.grant_role(&admin, &arbitrator, &Role::Arbitrator);
+    assert!(client.has_role(&arbitrator, &Role::Arbitrator));
+}
