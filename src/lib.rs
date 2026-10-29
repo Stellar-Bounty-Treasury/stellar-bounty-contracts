@@ -574,10 +574,11 @@ impl BountyTreasuryContract {
             );
         } else {
             // Default single-recipient direct transfer fallback
+            let net_payout = milestone.reward_amount - fee_amount;
             token_client.transfer(
                 &env.current_contract_address(),
                 &milestone.recipient,
-                &milestone.reward_amount,
+                &net_payout,
             );
 
             env.events().publish(
