@@ -1,0 +1,26 @@
+name: Smart Contracts CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test & Invariant Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Run Contract Tests
+        run: cargo test --lib
+
+      - name: Run Invariant Tests
+        run: cargo test --lib test_invariant
+
+      - name: Build WASM Target
+        run: cargo build --target wasm32-unknown-unknown --release
