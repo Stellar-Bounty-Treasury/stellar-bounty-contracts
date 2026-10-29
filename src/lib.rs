@@ -1241,6 +1241,12 @@ impl BountyTreasuryContract {
         }
     }
 
+
+    /// Extend instance storage rent TTL (ledger sequence threshold and extension count).
+    pub fn extend_contract_ttl(env: Env, threshold: u32, extend_to: u32) {
+        env.storage().instance().extend_ttl(threshold, extend_to);
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
