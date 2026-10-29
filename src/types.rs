@@ -33,6 +33,15 @@ pub enum ContractError {
     AmountTooSmall = 27,
 }
 
+/// Granular protocol actor roles for access control
+#[contracttype]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Role {
+    Admin = 1,
+    Arbitrator = 2,
+    Operator = 3,
+}
+
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BountyStatus {
@@ -143,4 +152,5 @@ pub enum DataKey {
     Vote(u64, u32, Address),
     Settlement(u64, u32),
     Refunded(u64),
+    Role(Address, u32),
 }
