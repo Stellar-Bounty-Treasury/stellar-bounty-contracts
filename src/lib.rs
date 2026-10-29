@@ -1002,6 +1002,53 @@ impl BountyTreasuryContract {
         bounty.funded_amount
     }
 
+
+    /// Create multiple milestones atomically in a single transaction (creator only).
+    pub fn create_milestones_batch(
+        env: Env,
+        creator: Address,
+        bounty_id: u64,
+        milestones: Vec<Milestone>,
+    ) -> u32 {
+        require_not_paused(&env);
+        creator.require_auth();
+
+        let mut bounty: Bounty = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Bounty(bounty_id))
+            .expect("Bounty not found");
+
+        if bounty.creator != creator {
+            env.panic_with_error(types::ContractError::Unauthorized);
+        }
+
+        let count = milestones.len();
+        if count == 0 || count > 10 {
+            env.panic_with_error(types::ContractError::InvalidMilestoneCount);
+        }
+
+        for i in 0..count {
+            let item = milestones.get(i).unwrap();
+            bounty.milestone_count += 1;
+            let m_id = bounty.milestone_count;
+
+            let mut m = item;
+            m.id = m_id;
+            m.bounty_id = bounty_id;
+            m.status = MilestoneStatus::Pending;
+            m.approvals = 0;
+            m.rejections = 0;
+
+            env.storage()
+                .persistent()
+                .set(&DataKey::Milestone(bounty_id, m_id), &m);
+        }
+
+        env.storage().persistent().set(&DataKey::Bounty(bounty_id), &bounty);
+        bounty.milestone_count
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
