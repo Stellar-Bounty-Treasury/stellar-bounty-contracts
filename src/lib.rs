@@ -766,6 +766,12 @@ impl BountyTreasuryContract {
         env.events().publish((symbol_short!("role"), symbol_short!("revoked")), (account, role as u32));
     }
 
+
+    /// Check whether an account holds a given role.
+    pub fn has_role(env: Env, account: Address, role: types::Role) -> bool {
+        env.storage().persistent().get(&DataKey::Role(account, role as u32)).unwrap_or(false)
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
