@@ -608,6 +608,7 @@ impl BountyTreasuryContract {
 
         // Update bounty escrow balance and milestone status
         bounty.funded_amount -= milestone.reward_amount;
+        assert_non_negative_balance(&env, bounty.funded_amount);
         milestone.status = MilestoneStatus::Paid;
 
         env.storage()
