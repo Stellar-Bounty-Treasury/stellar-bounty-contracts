@@ -45,3 +45,18 @@ fn test_invariant_reentrancy_lock() {
     assert_eq!(minor, 2);
     assert_eq!(patch, 0);
 }
+
+#[test]
+fn test_invariant_escrow_solvency() {
+    let (env, client, _admin, _treasury, token_address, asset_client, _tok_cli) = setup_test_env();
+    let creator = Address::generate(&env);
+    let funder = Address::generate(&env);
+
+    asset_client.mint(&funder, &1000_0000000i128);
+
+    let bounty_id = client.create_bounty(&creator, &symbol_short!("Bounty"), &1000_0000000i128, &token_address);
+    client.fund_bounty(&funder, &bounty_id, &1000_0000000i128);
+
+    let balance = client.get_bounty_escrow_balance(&bounty_id);
+    assert!(balance >= 1000_0000000i128, "Solvency invariant violated: balance < funded");
+}
