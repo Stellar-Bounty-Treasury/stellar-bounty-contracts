@@ -203,6 +203,7 @@ impl BountyTreasuryContract {
             approvals: 0,
             rejections: 0,
             submission_ref: symbol_short!("none"),
+            deadline: 0,
         };
 
         env.storage()

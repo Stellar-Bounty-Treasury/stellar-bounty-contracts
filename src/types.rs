@@ -141,6 +141,7 @@ pub struct Milestone {
     pub approvals: u32,
     pub rejections: u32,
     pub submission_ref: Symbol,
+    pub deadline: u64,
 }
 
 #[contracttype]
