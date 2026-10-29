@@ -1304,3 +1304,6 @@ impl BountyTreasuryContract {
             .has(&DataKey::Refunded(bounty_id))
     }
 }
+
+#[cfg(test)]
+mod test_invariants;
