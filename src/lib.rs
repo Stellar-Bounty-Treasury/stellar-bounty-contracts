@@ -33,6 +33,13 @@ fn assert_non_negative_balance(env: &Env, amount: i128) {
     }
 }
 
+
+fn assert_positive_amount(env: &Env, amount: i128) {
+    if amount <= 0 {
+        env.panic_with_error(types::ContractError::InvalidFundingAmount);
+    }
+}
+
 fn require_not_paused(env: &Env) {
     if env.storage().instance().get(&DataKey::Paused).unwrap_or(false) {
         env.panic_with_error(types::ContractError::ContractPaused);
