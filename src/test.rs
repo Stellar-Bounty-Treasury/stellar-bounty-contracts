@@ -952,3 +952,21 @@ fn test_non_arbitrator_cannot_resolve_dispute() {
     // Non-arbitrator resolving must panic!
     client.resolve_dispute(&impostor, &b_id, &m_id, &DisputeResolution::FavorContributor);
 }
+
+#[test]
+fn test_storage_ttl_extensions() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin);
+
+    let (token_address, _, _) = setup_test_token(&env, &admin);
+    let creator = Address::generate(&env);
+    let b_id = client.create_bounty(&creator, &symbol_short!("TTL"), &100_0000000i128, &token_address);
+
+    client.extend_contract_ttl(&1000u32, &10000u32);
+    client.extend_bounty_ttl(&b_id, &1000u32, &10000u32);
+}
