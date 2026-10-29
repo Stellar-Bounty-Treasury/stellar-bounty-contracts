@@ -183,6 +183,9 @@ impl BountyTreasuryContract {
             panic!("Cannot add milestones to cancelled or refunded bounty");
         }
 
+        if bounty.milestone_count >= 25 {
+            env.panic_with_error(types::ContractError::InvalidMilestoneCount);
+        }
         bounty.milestone_count += 1;
         let milestone_id = bounty.milestone_count;
 
