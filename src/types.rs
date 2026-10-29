@@ -193,4 +193,5 @@ pub enum DataKey {
     PlatformFeeBps,
     /// Dedicated platform fee treasury recipient address
     FeeRecipient,
+    Dispute(u64, u32),
 }
