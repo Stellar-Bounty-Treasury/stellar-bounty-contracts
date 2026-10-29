@@ -835,6 +835,49 @@ impl BountyTreasuryContract {
         (fee_bps, recipient)
     }
 
+
+    /// Extend or set milestone deliverable deadline (creator only).
+    pub fn extend_milestone_deadline(
+        env: Env,
+        creator: Address,
+        bounty_id: u64,
+        milestone_id: u32,
+        new_deadline: u64,
+    ) {
+        require_not_paused(&env);
+        creator.require_auth();
+
+        let bounty: Bounty = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Bounty(bounty_id))
+            .expect("Bounty not found");
+
+        if bounty.creator != creator {
+            env.panic_with_error(types::ContractError::Unauthorized);
+        }
+
+        let mut milestone: Milestone = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Milestone(bounty_id, milestone_id))
+            .expect("Milestone not found");
+
+        if milestone.status == MilestoneStatus::Paid {
+            env.panic_with_error(types::ContractError::AlreadySettled);
+        }
+
+        milestone.deadline = new_deadline;
+        env.storage()
+            .persistent()
+            .set(&DataKey::Milestone(bounty_id, milestone_id), &milestone);
+
+        env.events().publish(
+            (symbol_short!("milestone"), symbol_short!("extended")),
+            (bounty_id, milestone_id, new_deadline),
+        );
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
