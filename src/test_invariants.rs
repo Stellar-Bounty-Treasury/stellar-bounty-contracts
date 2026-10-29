@@ -100,3 +100,9 @@ fn test_invariant_settlement_sum_10000_bps() {
     let res = client.try_configure_settlement(&creator, &bounty_id, &m_id, &AllocationType::Percentage, &recipients);
     assert!(res.is_err());
 }
+
+#[test]
+fn test_invariant_storage_rent_ttl_extension() {
+    let (_env, client, _admin, _treasury, _token, _asset, _tok_cli) = setup_test_env();
+    client.extend_contract_ttl(&10000, &50000);
+}
