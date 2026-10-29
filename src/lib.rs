@@ -991,6 +991,17 @@ impl BountyTreasuryContract {
         );
     }
 
+
+    /// Query current funded escrow balance for a bounty.
+    pub fn get_bounty_escrow_balance(env: Env, bounty_id: u64) -> i128 {
+        let bounty: Bounty = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Bounty(bounty_id))
+            .expect("Bounty not found");
+        bounty.funded_amount
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
