@@ -34,6 +34,7 @@ fn assert_non_negative_balance(env: &Env, amount: i128) {
 }
 
 
+#[allow(dead_code)]
 fn assert_positive_amount(env: &Env, amount: i128) {
     if amount <= 0 {
         env.panic_with_error(types::ContractError::InvalidFundingAmount);

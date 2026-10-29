@@ -909,7 +909,7 @@ fn test_arbitrator_dispute_resolution_favor_contributor() {
 
     let m_id = client.create_milestone(&creator, &b_id, &symbol_short!("M1"), &100_0000000i128, &dev, &1u32);
 
-    client.file_dispute(&creator, &b_id, &m_id, &symbol_short!("ReviewDelay"));
+    client.file_dispute(&creator, &b_id, &m_id, &symbol_short!("RevDelay"));
 
     // Arbitrator resolves in favor of contributor
     client.resolve_dispute(&arb, &b_id, &m_id, &DisputeResolution::FavorContributor);
@@ -969,4 +969,20 @@ fn test_storage_ttl_extensions() {
 
     client.extend_contract_ttl(&1000u32, &10000u32);
     client.extend_bounty_ttl(&b_id, &1000u32, &10000u32);
+}
+
+#[test]
+fn test_protocol_version_and_total_count() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let (major, minor, patch) = client.get_protocol_version();
+    assert_eq!(major, 1);
+    assert_eq!(minor, 2);
+    assert_eq!(patch, 0);
+
+    let count = client.get_total_bounties_count();
+    assert_eq!(count, 0);
 }
