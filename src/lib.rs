@@ -21,7 +21,7 @@ impl BountyTreasuryContract {
     /// Initialize the Bounty Treasury contract with an admin address.
     pub fn initialize(env: Env, admin: Address) {
         if env.storage().instance().has(&DataKey::Admin) {
-            panic!("Already initialized");
+            env.panic_with_error(types::ContractError::AlreadyInitialized);
         }
         admin.require_auth();
         env.storage().instance().set(&DataKey::Admin, &admin);
@@ -33,7 +33,7 @@ impl BountyTreasuryContract {
         env.storage()
             .instance()
             .get(&DataKey::Admin)
-            .expect("Contract not initialized")
+            .unwrap_or_else(|| env.panic_with_error(types::ContractError::NotInitialized))
     }
 
     /// Retrieve the total number of bounties created.
