@@ -60,3 +60,15 @@ fn test_invariant_escrow_solvency() {
     let balance = client.get_bounty_escrow_balance(&bounty_id);
     assert!(balance >= 1000_0000000i128, "Solvency invariant violated: balance < funded");
 }
+
+#[test]
+fn test_invariant_fee_cap_under_500_bps() {
+    let (_env, client, admin, treasury, _token, _asset, _tok_cli) = setup_test_env();
+    client.set_platform_fee(&admin, &500, &treasury);
+    let (fee, rec) = client.get_platform_fee();
+    assert_eq!(fee, 500);
+    assert_eq!(rec, treasury);
+
+    let res = client.try_set_platform_fee(&admin, &501, &treasury);
+    assert!(res.is_err());
+}
