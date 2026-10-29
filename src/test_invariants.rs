@@ -72,3 +72,31 @@ fn test_invariant_fee_cap_under_500_bps() {
     let res = client.try_set_platform_fee(&admin, &501, &treasury);
     assert!(res.is_err());
 }
+
+#[test]
+fn test_invariant_settlement_sum_10000_bps() {
+    let (env, client, _admin, _treasury, token_address, _asset, _tok_cli) = setup_test_env();
+    let creator = Address::generate(&env);
+    let recipient1 = Address::generate(&env);
+    let recipient2 = Address::generate(&env);
+
+    let bounty_id = client.create_bounty(&creator, &symbol_short!("Bounty"), &1000_0000000i128, &token_address);
+    let m_id = client.create_milestone(&creator, &bounty_id, &symbol_short!("M1"), &1000_0000000i128, &recipient1, &100000);
+
+    let mut recipients = Vec::new(&env);
+    recipients.push_back(RecipientShare {
+        recipient: recipient1,
+        amount: 0,
+        percentage_bps: 8000,
+        label: symbol_short!("dev"),
+    });
+    recipients.push_back(RecipientShare {
+        recipient: recipient2,
+        amount: 0,
+        percentage_bps: 1999, // sum is 9999, not 10000
+        label: symbol_short!("qa"),
+    });
+
+    let res = client.try_configure_settlement(&creator, &bounty_id, &m_id, &AllocationType::Percentage, &recipients);
+    assert!(res.is_err());
+}
