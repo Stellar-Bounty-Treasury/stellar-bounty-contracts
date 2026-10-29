@@ -99,6 +99,7 @@ impl BountyTreasuryContract {
 
     /// 2. Fund bounty escrow vault (transfers tokens from funder to contract).
     pub fn fund_bounty(env: Env, funder: Address, bounty_id: u64, amount: i128) {
+        require_not_paused(&env);
         funder.require_auth();
 
         if amount <= 0 {
@@ -147,6 +148,7 @@ impl BountyTreasuryContract {
         recipient: Address,
         approval_threshold: u32,
     ) -> u32 {
+        require_not_paused(&env);
         creator.require_auth();
 
         if reward_amount <= 0 {
