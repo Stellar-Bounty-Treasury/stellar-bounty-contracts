@@ -1247,6 +1247,12 @@ impl BountyTreasuryContract {
         env.storage().instance().extend_ttl(threshold, extend_to);
     }
 
+
+    /// Extend persistent storage rent TTL for a bounty record.
+    pub fn extend_bounty_ttl(env: Env, bounty_id: u64, threshold: u32, extend_to: u32) {
+        env.storage().persistent().extend_ttl(&DataKey::Bounty(bounty_id), threshold, extend_to);
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
