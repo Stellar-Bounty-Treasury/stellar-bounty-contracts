@@ -739,6 +739,33 @@ impl BountyTreasuryContract {
         env.events().publish((symbol_short!("contract"), symbol_short!("unpaused")), admin);
     }
 
+
+    /// Grant role to an account (admin only).
+    pub fn grant_role(env: Env, admin: Address, account: Address, role: types::Role) {
+        admin.require_auth();
+        let current_admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap_or_else(|| {
+            env.panic_with_error(types::ContractError::NotInitialized)
+        });
+        if admin != current_admin {
+            env.panic_with_error(types::ContractError::Unauthorized);
+        }
+        env.storage().persistent().set(&DataKey::Role(account.clone(), role as u32), &true);
+        env.events().publish((symbol_short!("role"), symbol_short!("granted")), (account, role as u32));
+    }
+
+    /// Revoke role from an account (admin only).
+    pub fn revoke_role(env: Env, admin: Address, account: Address, role: types::Role) {
+        admin.require_auth();
+        let current_admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap_or_else(|| {
+            env.panic_with_error(types::ContractError::NotInitialized)
+        });
+        if admin != current_admin {
+            env.panic_with_error(types::ContractError::Unauthorized);
+        }
+        env.storage().persistent().set(&DataKey::Role(account.clone(), role as u32), &false);
+        env.events().publish((symbol_short!("role"), symbol_short!("revoked")), (account, role as u32));
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
