@@ -1049,6 +1049,47 @@ impl BountyTreasuryContract {
         bounty.milestone_count
     }
 
+
+    /// Resubmit a deliverable after milestone was rejected by reviewers.
+    pub fn resubmit_milestone(
+        env: Env,
+        contributor: Address,
+        bounty_id: u64,
+        milestone_id: u32,
+        new_submission_ref: Symbol,
+    ) {
+        require_not_paused(&env);
+        contributor.require_auth();
+
+        let mut milestone: Milestone = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Milestone(bounty_id, milestone_id))
+            .expect("Milestone not found");
+
+        if milestone.recipient != contributor {
+            env.panic_with_error(types::ContractError::Unauthorized);
+        }
+
+        if milestone.status != MilestoneStatus::Rejected {
+            panic!("Milestone must be in Rejected state to resubmit");
+        }
+
+        milestone.status = MilestoneStatus::Submitted;
+        milestone.submission_ref = new_submission_ref;
+        milestone.approvals = 0;
+        milestone.rejections = 0;
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::Milestone(bounty_id, milestone_id), &milestone);
+
+        env.events().publish(
+            (symbol_short!("milestone"), symbol_short!("resubmit")),
+            (bounty_id, milestone_id, contributor),
+        );
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
