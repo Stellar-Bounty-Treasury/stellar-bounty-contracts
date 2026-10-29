@@ -885,3 +885,70 @@ fn test_dispute_filing_lifecycle() {
     assert_eq!(dispute.status, DisputeStatus::Active);
     assert_eq!(dispute.reason, symbol_short!("LowQual"));
 }
+
+#[test]
+fn test_arbitrator_dispute_resolution_favor_contributor() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    let arb = Address::generate(&env);
+    client.initialize(&admin);
+    client.grant_role(&admin, &arb, &Role::Arbitrator);
+
+    let (token_address, asset_client, token_client) = setup_test_token(&env, &admin);
+    let creator = Address::generate(&env);
+    let funder = Address::generate(&env);
+    let dev = Address::generate(&env);
+
+    asset_client.mint(&funder, &1000_0000000i128);
+    let b_id = client.create_bounty(&creator, &symbol_short!("ArbTest"), &100_0000000i128, &token_address);
+    client.fund_bounty(&funder, &b_id, &100_0000000i128);
+
+    let m_id = client.create_milestone(&creator, &b_id, &symbol_short!("M1"), &100_0000000i128, &dev, &1u32);
+
+    client.file_dispute(&creator, &b_id, &m_id, &symbol_short!("ReviewDelay"));
+
+    // Arbitrator resolves in favor of contributor
+    client.resolve_dispute(&arb, &b_id, &m_id, &DisputeResolution::FavorContributor);
+
+    let dispute = client.get_dispute(&b_id, &m_id);
+    assert_eq!(dispute.status, DisputeStatus::Resolved);
+
+    // Milestone is now approved -> can settle!
+    let m = client.get_milestone(&b_id, &m_id);
+    assert_eq!(m.status, MilestoneStatus::Approved);
+
+    client.execute_settlement(&creator, &b_id, &m_id);
+    assert_eq!(token_client.balance(&dev), 100_0000000i128);
+}
+
+#[test]
+#[should_panic]
+fn test_non_arbitrator_cannot_resolve_dispute() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    let impostor = Address::generate(&env);
+    client.initialize(&admin);
+
+    let (token_address, asset_client, _) = setup_test_token(&env, &admin);
+    let creator = Address::generate(&env);
+    let funder = Address::generate(&env);
+    let dev = Address::generate(&env);
+
+    asset_client.mint(&funder, &1000_0000000i128);
+    let b_id = client.create_bounty(&creator, &symbol_short!("Dispute2"), &100_0000000i128, &token_address);
+    client.fund_bounty(&funder, &b_id, &100_0000000i128);
+
+    let m_id = client.create_milestone(&creator, &b_id, &symbol_short!("M1"), &100_0000000i128, &dev, &1u32);
+    client.file_dispute(&creator, &b_id, &m_id, &symbol_short!("Delay"));
+
+    // Non-arbitrator resolving must panic!
+    client.resolve_dispute(&impostor, &b_id, &m_id, &DisputeResolution::FavorContributor);
+}
