@@ -153,4 +153,8 @@ pub enum DataKey {
     Settlement(u64, u32),
     Refunded(u64),
     Role(Address, u32),
+    /// Emergency circuit breaker state (bool)
+    Paused,
+    /// Reentrancy guard execution lock (bool)
+    Locked,
 }
