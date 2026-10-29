@@ -1,4 +1,37 @@
-use soroban_sdk::{contracttype, Address, Symbol, Vec};
+use soroban_sdk::{contracterror, contracttype, Address, Symbol, Vec};
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum ContractError {
+    AlreadyInitialized = 1,
+    NotInitialized = 2,
+    Unauthorized = 3,
+    InvalidTargetAmount = 4,
+    InvalidFundingAmount = 5,
+    BountyNotFound = 6,
+    MilestoneNotFound = 7,
+    BountyNotOpen = 8,
+    MilestoneNotApproved = 9,
+    AlreadySettled = 10,
+    ContractPaused = 11,
+    ReentrancyGuard = 12,
+    InvalidFeeBps = 13,
+    InvalidThreshold = 14,
+    AlreadyVoted = 15,
+    MilestoneExceedsFunding = 16,
+    AllocationMismatch = 17,
+    DuplicateRecipient = 18,
+    DisputeAlreadyActive = 19,
+    DisputeNotFound = 20,
+    DeadlineNotPassed = 21,
+    DeadlineExpired = 22,
+    InsufficientEscrow = 23,
+    MilestonesPending = 24,
+    RoleRequired = 25,
+    InvalidMilestoneCount = 26,
+    AmountTooSmall = 27,
+}
 
 #[contracttype]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
