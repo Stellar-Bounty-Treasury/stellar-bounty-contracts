@@ -517,6 +517,26 @@ impl BountyTreasuryContract {
         let settlement_key = DataKey::Settlement(bounty_id, milestone_id);
         let token_client = token::Client::new(&env, &bounty.token);
 
+        // Deduct platform protocol fee if configured
+        let (fee_bps, fee_recipient) = Self::get_platform_fee(env.clone());
+        let fee_amount = if fee_bps > 0 {
+            (milestone.reward_amount * fee_bps as i128) / 10_000
+        } else {
+            0
+        };
+
+        if fee_amount > 0 {
+            token_client.transfer(
+                &env.current_contract_address(),
+                &fee_recipient,
+                &fee_amount,
+            );
+            env.events().publish(
+                (symbol_short!("fee"), symbol_short!("collected")),
+                (bounty_id, milestone_id, fee_amount, fee_recipient),
+            );
+        }
+
         if let Some(mut settlement) = env.storage().persistent().get::<DataKey, SettlementConfig>(&settlement_key) {
             if settlement.status == SettlementStatus::Settled {
                 panic!("Settlement has already been executed");
