@@ -1104,6 +1104,61 @@ impl BountyTreasuryContract {
         );
     }
 
+
+    /// File an escrow milestone dispute (creator or milestone recipient only).
+    pub fn file_dispute(
+        env: Env,
+        initiator: Address,
+        bounty_id: u64,
+        milestone_id: u32,
+        reason: Symbol,
+    ) {
+        require_not_paused(&env);
+        initiator.require_auth();
+
+        let bounty: Bounty = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Bounty(bounty_id))
+            .expect("Bounty not found");
+
+        let milestone: Milestone = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Milestone(bounty_id, milestone_id))
+            .expect("Milestone not found");
+
+        if initiator != bounty.creator && initiator != milestone.recipient {
+            env.panic_with_error(types::ContractError::Unauthorized);
+        }
+
+        if milestone.status == MilestoneStatus::Paid {
+            env.panic_with_error(types::ContractError::AlreadySettled);
+        }
+
+        let dispute_key = DataKey::Dispute(bounty_id, milestone_id);
+        if env.storage().persistent().has(&dispute_key) {
+            env.panic_with_error(types::ContractError::DisputeAlreadyActive);
+        }
+
+        let dispute = types::Dispute {
+            bounty_id,
+            milestone_id,
+            initiator: initiator.clone(),
+            reason,
+            status: types::DisputeStatus::Active,
+            resolution: types::DisputeResolution::FavorContributor,
+            arbitrator: initiator.clone(),
+        };
+
+        env.storage().persistent().set(&dispute_key, &dispute);
+
+        env.events().publish(
+            (symbol_short!("dispute"), symbol_short!("opened")),
+            (bounty_id, milestone_id, initiator),
+        );
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
