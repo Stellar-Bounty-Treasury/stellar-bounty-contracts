@@ -1227,6 +1227,16 @@ impl BountyTreasuryContract {
             .expect("Dispute not found")
     }
 
+
+    /// Check whether a milestone currently has an active dispute.
+    pub fn has_active_dispute(env: Env, bounty_id: u64, milestone_id: u32) -> bool {
+        if let Some(dispute) = env.storage().persistent().get::<DataKey, types::Dispute>(&DataKey::Dispute(bounty_id, milestone_id)) {
+            dispute.status == types::DisputeStatus::Active
+        } else {
+            false
+        }
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
