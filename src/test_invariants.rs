@@ -155,3 +155,17 @@ fn test_invariant_dispute_verdict_finality() {
     client.resolve_dispute(&arbitrator, &bounty_id, &m_id, &DisputeResolution::FavorContributor);
     assert!(!client.has_active_dispute(&bounty_id, &m_id));
 }
+
+#[test]
+fn test_invariant_deadline_expiration_bounds() {
+    let (env, client, _admin, _treasury, token_address, _asset, _tok_cli) = setup_test_env();
+    let creator = Address::generate(&env);
+    let contributor = Address::generate(&env);
+
+    let bounty_id = client.create_bounty(&creator, &symbol_short!("B"), &1000_0000000i128, &token_address);
+    let m_id = client.create_milestone(&creator, &bounty_id, &symbol_short!("M"), &1000_0000000i128, &contributor, &1000000);
+
+    client.extend_milestone_deadline(&creator, &bounty_id, &m_id, &2000000);
+    let milestone = client.get_milestone(&bounty_id, &m_id);
+    assert_eq!(milestone.deadline, 2000000);
+}
