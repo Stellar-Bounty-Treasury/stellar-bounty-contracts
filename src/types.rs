@@ -157,4 +157,8 @@ pub enum DataKey {
     Paused,
     /// Reentrancy guard execution lock (bool)
     Locked,
+    /// Platform fee basis points (u32, max 500 BPS)
+    PlatformFeeBps,
+    /// Dedicated platform fee treasury recipient address
+    FeeRecipient,
 }
