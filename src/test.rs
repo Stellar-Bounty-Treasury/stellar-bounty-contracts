@@ -622,3 +622,47 @@ fn test_bounty_completion_fails_if_milestone_unpaid() {
     // Milestone 1 is still pending -> completing bounty MUST fail!
     client.complete_bounty(&creator, &b_id);
 }
+
+#[test]
+fn test_emergency_pause_blocks_bounty_operations() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin);
+
+    assert_eq!(client.is_paused(), false);
+
+    // Admin pauses contract
+    client.pause(&admin);
+    assert_eq!(client.is_paused(), true);
+
+    // Unpause
+    client.unpause(&admin);
+    assert_eq!(client.is_paused(), false);
+
+    let (token_address, _, _) = setup_test_token(&env, &admin);
+    let creator = Address::generate(&env);
+    let b_id = client.create_bounty(&creator, &symbol_short!("Active"), &50_0000000i128, &token_address);
+    assert_eq!(b_id, 1);
+}
+
+#[test]
+#[should_panic]
+fn test_emergency_pause_panics_on_create_bounty() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    client.initialize(&admin);
+
+    client.pause(&admin);
+
+    let (token_address, _, _) = setup_test_token(&env, &admin);
+    let creator = Address::generate(&env);
+    client.create_bounty(&creator, &symbol_short!("Fail"), &50_0000000i128, &token_address);
+}
