@@ -790,6 +790,18 @@ impl BountyTreasuryContract {
         env.events().publish((symbol_short!("fee"), symbol_short!("updated")), (fee_bps, fee_recipient));
     }
 
+
+    /// Query current platform fee basis points and fee recipient address.
+    pub fn get_platform_fee(env: Env) -> (u32, Address) {
+        let fee_bps = env.storage().instance().get(&DataKey::PlatformFeeBps).unwrap_or(0u32);
+        let recipient = env.storage().instance().get(&DataKey::FeeRecipient).unwrap_or_else(|| {
+            env.storage().instance().get(&DataKey::Admin).unwrap_or_else(|| {
+                env.panic_with_error(types::ContractError::NotInitialized)
+            })
+        });
+        (fee_bps, recipient)
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
