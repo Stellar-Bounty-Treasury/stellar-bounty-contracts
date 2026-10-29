@@ -13,9 +13,7 @@ use types::{
     RecipientShare, SettlementConfig, SettlementStatus, VoteDecision,
 };
 
-#[contract]
-
-
+#[allow(dead_code)]
 fn acquire_reentrancy_lock(env: &Env) {
     if env.storage().instance().get(&DataKey::Locked).unwrap_or(false) {
         env.panic_with_error(types::ContractError::ReentrancyGuard);
@@ -23,6 +21,7 @@ fn acquire_reentrancy_lock(env: &Env) {
     env.storage().instance().set(&DataKey::Locked, &true);
 }
 
+#[allow(dead_code)]
 fn release_reentrancy_lock(env: &Env) {
     env.storage().instance().set(&DataKey::Locked, &false);
 }
@@ -33,6 +32,7 @@ fn require_not_paused(env: &Env) {
     }
 }
 
+#[contract]
 pub struct BountyTreasuryContract;
 
 #[contractimpl]

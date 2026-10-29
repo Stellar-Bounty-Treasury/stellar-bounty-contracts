@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use super::*;
+use types::Role;
 use soroban_sdk::{
     symbol_short,
     testutils::Address as _,
@@ -665,4 +666,57 @@ fn test_emergency_pause_panics_on_create_bounty() {
     let (token_address, _, _) = setup_test_token(&env, &admin);
     let creator = Address::generate(&env);
     client.create_bounty(&creator, &symbol_short!("Fail"), &50_0000000i128, &token_address);
+}
+
+#[test]
+fn test_role_based_access_control_lifecycle() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    let arb = Address::generate(&env);
+    client.initialize(&admin);
+
+    assert_eq!(client.has_role(&arb, &Role::Arbitrator), false);
+
+    client.grant_role(&admin, &arb, &Role::Arbitrator);
+    assert_eq!(client.has_role(&arb, &Role::Arbitrator), true);
+
+    client.revoke_role(&admin, &arb, &Role::Arbitrator);
+    assert_eq!(client.has_role(&arb, &Role::Arbitrator), false);
+}
+
+#[test]
+fn test_platform_fee_configuration_and_caps() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    client.initialize(&admin);
+
+    client.set_platform_fee(&admin, &250u32, &treasury);
+    let (bps, recipient) = client.get_platform_fee();
+    assert_eq!(bps, 250u32);
+    assert_eq!(recipient, treasury);
+}
+
+#[test]
+#[should_panic]
+fn test_platform_fee_exceeding_cap_fails() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(BountyTreasuryContract, ());
+    let client = BountyTreasuryContractClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
+    client.initialize(&admin);
+
+    // 600 BPS exceeds 500 BPS max cap -> must panic!
+    client.set_platform_fee(&admin, &600u32, &treasury);
 }
