@@ -1159,6 +1159,65 @@ impl BountyTreasuryContract {
         );
     }
 
+
+    /// Arbitrate and resolve an active milestone dispute (Arbitrator role only).
+    pub fn resolve_dispute(
+        env: Env,
+        arbitrator: Address,
+        bounty_id: u64,
+        milestone_id: u32,
+        verdict: types::DisputeResolution,
+    ) {
+        require_not_paused(&env);
+        arbitrator.require_auth();
+
+        if !Self::has_role(env.clone(), arbitrator.clone(), types::Role::Arbitrator) {
+            env.panic_with_error(types::ContractError::RoleRequired);
+        }
+
+        let dispute_key = DataKey::Dispute(bounty_id, milestone_id);
+        let mut dispute: types::Dispute = env
+            .storage()
+            .persistent()
+            .get(&dispute_key)
+            .unwrap_or_else(|| env.panic_with_error(types::ContractError::DisputeNotFound));
+
+        if dispute.status != types::DisputeStatus::Active {
+            panic!("Dispute is not active");
+        }
+
+        let mut milestone: Milestone = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Milestone(bounty_id, milestone_id))
+            .expect("Milestone not found");
+
+        dispute.status = types::DisputeStatus::Resolved;
+        dispute.resolution = verdict;
+        dispute.arbitrator = arbitrator.clone();
+
+        match verdict {
+            types::DisputeResolution::FavorContributor => {
+                // Force approve milestone so payment can be released
+                milestone.status = MilestoneStatus::Approved;
+            }
+            types::DisputeResolution::FavorCreator => {
+                // Reject milestone and unlock funds for creator refund
+                milestone.status = MilestoneStatus::Rejected;
+            }
+        }
+
+        env.storage().persistent().set(&dispute_key, &dispute);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Milestone(bounty_id, milestone_id), &milestone);
+
+        env.events().publish(
+            (symbol_short!("dispute"), symbol_short!("resolved")),
+            (bounty_id, milestone_id, verdict as u32),
+        );
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
