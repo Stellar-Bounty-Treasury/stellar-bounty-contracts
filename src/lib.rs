@@ -685,6 +685,38 @@ impl BountyTreasuryContract {
             .has(&DataKey::Settlement(bounty_id, milestone_id))
     }
 
+
+    /// Check whether the contract is currently paused.
+    pub fn is_paused(env: Env) -> bool {
+        env.storage().instance().get(&DataKey::Paused).unwrap_or(false)
+    }
+
+    /// Emergency circuit breaker to halt state-mutating operations (admin only).
+    pub fn pause(env: Env, admin: Address) {
+        admin.require_auth();
+        let current_admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap_or_else(|| {
+            env.panic_with_error(types::ContractError::NotInitialized)
+        });
+        if admin != current_admin {
+            env.panic_with_error(types::ContractError::Unauthorized);
+        }
+        env.storage().instance().set(&DataKey::Paused, &true);
+        env.events().publish((symbol_short!("contract"), symbol_short!("paused")), admin);
+    }
+
+    /// Lift emergency pause (admin only).
+    pub fn unpause(env: Env, admin: Address) {
+        admin.require_auth();
+        let current_admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap_or_else(|| {
+            env.panic_with_error(types::ContractError::NotInitialized)
+        });
+        if admin != current_admin {
+            env.panic_with_error(types::ContractError::Unauthorized);
+        }
+        env.storage().instance().set(&DataKey::Paused, &false);
+        env.events().publish((symbol_short!("contract"), symbol_short!("unpaused")), admin);
+    }
+
     /// Check if bounty was refunded.
     pub fn is_refunded(env: Env, bounty_id: u64) -> bool {
         env.storage()
