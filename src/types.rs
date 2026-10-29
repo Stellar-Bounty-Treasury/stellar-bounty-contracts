@@ -162,6 +162,19 @@ pub struct Milestone {
     pub deadline: u64,
 }
 
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Dispute {
+    pub bounty_id: u64,
+    pub milestone_id: u32,
+    pub initiator: Address,
+    pub reason: Symbol,
+    pub status: DisputeStatus,
+    pub resolution: DisputeResolution,
+    pub arbitrator: Address,
+}
+
 #[contracttype]
 pub enum DataKey {
     Admin,
