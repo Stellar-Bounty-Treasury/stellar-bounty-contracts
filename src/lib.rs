@@ -398,6 +398,11 @@ impl BountyTreasuryContract {
             panic!("Milestone is not in submittable state");
         }
 
+        // Verify deadline has not elapsed if configured
+        if milestone.deadline > 0 && env.ledger().timestamp() > milestone.deadline {
+            env.panic_with_error(types::ContractError::DeadlineExpired);
+        }
+
         milestone.status = MilestoneStatus::Submitted;
         milestone.submission_ref = submission_ref;
 
