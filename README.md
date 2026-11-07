@@ -47,6 +47,23 @@ Enforces atomic token distribution across multiple recipient addresses. Percenta
 Executes atomic disbursement via `execute_settlement`, releasing funds to all recipients simultaneously in a single Soroban transaction.
 ![Pre-Flight Settlement Preview](docs/screenshots/05_settlement_execution_preview.png)
 
+### 6. Interactive 1-Click Judge Demo Mode & Personas
+Enables instant evaluation for hackathon judges and auditors. Toggle between Creator (Alice), Contributor (Bob), and Arbitrator (Charlie) with automated mock faucets and interactive quick tours.
+![Judge Demo Mode](docs/screenshots/06_judge_demo_mode.png)
+
+### 7. Soroban RPC Pre-Flight Gas & CPU Simulation
+Simulates transaction footprint and resource consumption (CPU instructions, memory read bytes, ledger fees) before signing.
+![Soroban Gas Simulation](docs/screenshots/07_soroban_gas_simulation.png)
+
+### 8. Decentralized Dispute Arbitration & Verdict Finality
+Decentralized resolution protocol allowing appointed governance arbitrators to resolve contested milestones.
+![Dispute Arbitration](docs/screenshots/08_dispute_arbitration.png)
+
+### 9. Stellar Ecosystem Standards & Discovery
+Full compliance with SEP-0001 (stellar.toml), SEP-0007 transaction signing URIs, and SEP-0010 Stellar Web Authentication.
+![Ecosystem Standards](docs/screenshots/09_ecosystem_sep_showcase.png)
+
+
 ---
 
 ## 📍 Deployed Contract Details
