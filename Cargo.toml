@@ -1,7 +1,13 @@
 [package]
 name = "stellar-bounty-contracts"
-version = "0.1.0"
+version = "4.0.0"
 edition = "2021"
+description = "Production Soroban smart contracts for milestone-based conditional escrow, multi-recipient settlement routing, and trustless refund recovery on Stellar"
+repository = "https://github.com/Stellar-Bounty-Treasury/stellar-bounty-contracts"
+license = "MIT"
+authors = ["Dev3DPrint <322404527+Dev3DPrint@users.noreply.github.com>"]
+keywords = ["stellar", "soroban", "smart-contracts", "escrow", "settlement-router"]
+categories = ["cryptography::cryptocurrencies", "finance"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]

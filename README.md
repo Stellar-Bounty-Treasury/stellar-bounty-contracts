@@ -191,4 +191,5 @@ cargo build --target wasm32-unknown-unknown --release
 * **Contributing Guidelines:** Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting pull requests.
 * **Code of Conduct:** Community interactions are governed by [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 * **Security Policy:** To report vulnerabilities responsibly, review [SECURITY.md](SECURITY.md).
+* **Changelog:** See all releases and updates in [CHANGELOG.md](CHANGELOG.md).
 * **License:** This project is licensed under the [MIT License](LICENSE).
