@@ -171,23 +171,12 @@ Run the complete Soroban SDK test suite:
 cargo test
 ```
 
-16 comprehensive Rust tests passing cleanly:
-* `test_bounty_creation_and_funding`
-* `test_milestone_lifecycle_and_approval`
-* `test_milestone_rejection`
-* `test_double_voting_prevention`
-* `test_settlement_router_percentage_success`
-* `test_settlement_router_fixed_success`
-* `test_settlement_router_invalid_percentage_fails`
-* `test_settlement_router_invalid_fixed_sum_fails`
-* `test_settlement_router_empty_recipients_fails`
-* `test_settlement_cannot_execute_unapproved`
-* `test_settlement_cannot_execute_twice`
-* `test_settlement_immutable_after_approval`
-* `test_refund_bounty_success`
-* `test_refund_bounty_unauthorized_fails`
-* `test_refund_cannot_execute_twice`
-* `test_complete_bounty_success`
+39 comprehensive Rust unit and invariant tests passing cleanly:
+* **Escrow Solvency & Funding**: Vault locking, non-negative amounts, refund recovery.
+* **Milestone Governance**: Quorum threshold verification, approval finality, deadline extension.
+* **Settlement Router**: Fixed allocations and 10,000 basis points percentage splits with residue handling.
+* **Access Control & RBAC**: Admin, Arbitrator, Operator separation and escalation defense.
+* **Security & Invariants**: Cross-contract reentrancy lock, circuit breaker emergency pause, storage TTL rent renewal, and dispute verdict finality.
 
 ---
 
