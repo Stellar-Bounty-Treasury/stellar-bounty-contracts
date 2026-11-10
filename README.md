@@ -1,5 +1,4 @@
 [![Smart Contracts CI](https://github.com/Stellar-Bounty-Treasury/stellar-bounty-contracts/actions/workflows/contracts.yml/badge.svg)](https://github.com/Stellar-Bounty-Treasury/stellar-bounty-contracts/actions)
-[![Security Audit](https://img.shields.io/badge/Security%20Audit-PASSED%20(0%20High)-10b981.svg)](docs/SECURITY_AUDIT_REPORT.md)
 [![Invariants Verified](https://img.shields.io/badge/Invariants-9%2F9%20Formally%20Verified-38bdf8.svg)](src/test_invariants.rs)
 
 # 🏦 Stellar Bounty Treasury — Soroban Smart Contracts

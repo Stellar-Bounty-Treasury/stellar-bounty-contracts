@@ -47,6 +47,15 @@ fn require_not_paused(env: &Env) {
     }
 }
 
+const STORAGE_TTL_THRESHOLD: u32 = 17280;
+const STORAGE_TTL_EXTEND_TO: u32 = 518400;
+
+#[allow(dead_code)]
+fn bump_bounty_ttl(env: &Env, bounty_id: u64) {
+    env.storage().instance().extend_ttl(STORAGE_TTL_THRESHOLD, STORAGE_TTL_EXTEND_TO);
+    env.storage().persistent().extend_ttl(&DataKey::Bounty(bounty_id), STORAGE_TTL_THRESHOLD, STORAGE_TTL_EXTEND_TO);
+}
+
 #[contract]
 pub struct BountyTreasuryContract;
 
@@ -115,6 +124,7 @@ impl BountyTreasuryContract {
 
         env.storage().persistent().set(&DataKey::Bounty(counter), &bounty);
         env.storage().instance().set(&DataKey::BountyCounter, &counter);
+        bump_bounty_ttl(&env, counter);
 
         // Emit structured event
         env.events().publish(
@@ -161,6 +171,7 @@ impl BountyTreasuryContract {
         }
 
         env.storage().persistent().set(&DataKey::Bounty(bounty_id), &bounty);
+        bump_bounty_ttl(&env, bounty_id);
 
         // Emit structured event
         env.events().publish(
@@ -226,6 +237,7 @@ impl BountyTreasuryContract {
             .persistent()
             .set(&DataKey::Milestone(bounty_id, milestone_id), &milestone);
         env.storage().persistent().set(&DataKey::Bounty(bounty_id), &bounty);
+        bump_bounty_ttl(&env, bounty_id);
 
         // Emit structured event
         env.events().publish(
